@@ -17,3 +17,8 @@ Argendrez es un videojuego de ajedrez en línea en 2D que permite a dos jugadore
 - **Entorno de Desarrollo:** Eclipse 
 - **Plataformas Objetivo:** Escritorio (PC), con posibilidad de ampliación a Web o Movil  
 - **Redes:** Conexión entre jugadores mediante programación en red  
+
+## Wiki
+**Enlace a la Wiki del Proyecto (Propuesta Detallada):**
+[Ver la Propuesta Completa del Proyecto
+aquí](https://github.com/TU_USUARIO/TU_REPOSITORIO/wiki/Propuesta-delProyecto----Nombre-del-Juego)
