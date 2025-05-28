@@ -1,33 +1,19 @@
 # Argendrez
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+## Integrantes del Grupo
 
-This project was generated with a template including simple application launchers and an `ApplicationAdapter` extension that draws libGDX logo.
+- Maximiliano Maldonado 
+- Matías Miño   
+- Thiago Fuertes  
 
-## Platforms
+## Descripción Corta del Juego
 
-- `core`: Main module with the application logic shared by all platforms.
-- `lwjgl3`: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+Argendrez es un videojuego de ajedrez en línea en 2D que permite a dos jugadores conectarse desde sus computadoras y jugar partidas respetando las reglas oficiales del ajedrez. Ademas, incorpora modos de juego innovadores que agregan nuevas piezas, movimientos especiales y mecanicas dinamicas como cartas aleatorias y peones evolucionados. El objetivo es ofrecer una experiencia nueva y creativa pero que mantenga la esencia del ajedrez clasico.
 
-## Gradle
+## Tecnologías Utilizadas
 
-This project uses [Gradle](https://gradle.org/) to manage dependencies.
-The Gradle wrapper was included, so you can run Gradle tasks using `gradlew.bat` or `./gradlew` commands.
-Useful Gradle tasks and flags:
-
-- `--continue`: when using this flag, errors will not stop the tasks from running.
-- `--daemon`: thanks to this flag, Gradle daemon will be used to run chosen tasks.
-- `--offline`: when using this flag, cached dependency archives will be used.
-- `--refresh-dependencies`: this flag forces validation of all dependencies. Useful for snapshot versions.
-- `build`: builds sources and archives of every project.
-- `cleanEclipse`: removes Eclipse project data.
-- `cleanIdea`: removes IntelliJ project data.
-- `clean`: removes `build` folders, which store compiled classes and built archives.
-- `eclipse`: generates Eclipse project data.
-- `idea`: generates IntelliJ project data.
-- `lwjgl3:jar`: builds application's runnable jar, which can be found at `lwjgl3/build/libs`.
-- `lwjgl3:run`: starts the application.
-- `test`: runs unit tests (if any).
-
-Note that most tasks that are not specific to a single project can be run with `name:` prefix, where the `name` should be replaced with the ID of a specific project.
-For example, `core:clean` removes `build` folder only from the `core` project.
+- **Lenguaje:** Java  
+- **Motor Grafico:** LibGDX  
+- **Entorno de Desarrollo:** Eclipse 
+- **Plataformas Objetivo:** Escritorio (PC), con posibilidad de ampliación a Web o Movil  
+- **Redes:** Conexión entre jugadores mediante programación en red  
