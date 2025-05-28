@@ -21,4 +21,4 @@ Argendrez es un videojuego de ajedrez en línea en 2D que permite a dos jugadore
 ## Wiki
 **Enlace a la Wiki del Proyecto (Propuesta Detallada):**
 [Ver la Propuesta Completa del Proyecto
-aquí](https://github.com/TU_USUARIO/TU_REPOSITORIO/wiki/Propuesta-delProyecto----Nombre-del-Juego)
+aquí]((https://github.com/maximaldo/Argendrez-Juego/wiki/Propuesta-del-proyecto-%E2%80%90-Argendrez))
