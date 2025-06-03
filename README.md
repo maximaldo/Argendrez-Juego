@@ -24,7 +24,7 @@ Argendrez es un videojuego de ajedrez en línea en 2D que permite a dos jugadore
 aquí](https://github.com/maximaldo/Argendrez-Juego/wiki/Propuesta-del-proyecto-%E2%80%90-Argendrez)
 
 ## Instrucciones Básicas de Compilación y Ejecución
-1. Clonar el repositorio
+1. Clonar el repositorio:
 git clone https://github.com/maximaldo/Argendrez-Juego
 cd Argendrez-juego
 
@@ -37,6 +37,7 @@ Eclipse, IntelliJ IDEA o cualquier editor con terminal
 En Windows
 
 gradlew.bat desktop:build
+
 4. Ejecutar el juego
 En Windows
 
