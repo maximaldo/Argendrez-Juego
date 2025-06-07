@@ -18,27 +18,37 @@ Argendrez es un videojuego de ajedrez en línea en 2D que permite a dos jugadore
 - **Plataformas Objetivo:** Escritorio (PC), con posibilidad de ampliación a Web o Movil  
 - **Redes:** Conexión entre jugadores mediante programación en red  
 
+## Estado Actual del Proyecto
+Actualmente el proyecto se encuentra en una etapa inicial. Se ha realizado la configuración del proyecto con LibGDX usando el asistente Liftoff, se ha creado y organizado el repositorio en GitHub, y se están desarrollando las primeras funcionalidades del tablero y lógica de piezas. También se está implementando la estructura básica para la conexión en red entre jugadores.
+
 ## Wiki
 **Enlace a la Wiki del Proyecto (Propuesta Detallada):**
 [Ver la Propuesta Completa del Proyecto
 aquí](https://github.com/maximaldo/Argendrez-Juego/wiki/Propuesta-del-proyecto-%E2%80%90-Argendrez)
 
 ## Instrucciones Básicas de Compilación y Ejecución
-1. Clonar el repositorio:
+1. Requisitos previos
+  Java JDK 8 o superior (recomendado: JDK 11)
+  Tener instalado Gradle (opcional, el wrapper gradlew viene incluido)
+  Un IDE compatible como Eclipse o IntelliJ IDEA
+
+2. Clonar el repositorio:
 git clone https://github.com/maximaldo/Argendrez-Juego
 cd Argendrez-juego
 
-Requisitos previos
-Java JDK 8 o superior (recomendado: JDK 11)
 
 Eclipse, IntelliJ IDEA o cualquier editor con terminal
 
-3. Compilar el proyecto
-En Windows
+##3. Importar el Proyecto en Eclipse 
 
-gradlew.bat desktop:build
+1. Abrir Eclipse.
+2. Seleccionar File > Import > Gradle > Existing Gradle Project.
+3. Seleccionar la carpeta del proyecto clonado (Argendrez-Juego).
+4. Finalizar la importación y esperar que se sincronicen las dependencias.
+5. gradlew.bat desktop:build
 
 4. Ejecutar el juego
 En Windows
 
 gradlew.bat desktop:run
+En Linux/macOS:  ./gradlew desktop:run
