@@ -27,19 +27,21 @@ Actualmente el proyecto se encuentra en una etapa inicial. Se ha realizado la co
 aquí](https://github.com/maximaldo/Argendrez-Juego/wiki/Propuesta-del-proyecto-%E2%80%90-Argendrez)
 
 ## Instrucciones Básicas de Compilación y Ejecución
-1. Requisitos previos
-  Java JDK 8 o superior (recomendado: JDK 11)
-  Tener instalado Gradle (opcional, el wrapper gradlew viene incluido)
-  Un IDE compatible como Eclipse o IntelliJ IDEA
+1. Requisitos previos.
+  Java JDK 8 o superior (recomendado: JDK 11).
 
-2. Clonar el repositorio:
+  Tener instalado Gradle (opcional, el wrapper gradlew viene incluido).
+  
+  Un IDE compatible como Eclipse o IntelliJ IDEA.
+
+3. Clonar el repositorio:
 git clone https://github.com/maximaldo/Argendrez-Juego
+
 cd Argendrez-juego
 
 
-Eclipse, IntelliJ IDEA o cualquier editor con terminal
 
-3. Importar el Proyecto en Eclipse 
+3. Importar el Proyecto en Eclipse.
 
 1. Abrir Eclipse.
 2. Seleccionar File > Import > Gradle > Existing Gradle Project.
