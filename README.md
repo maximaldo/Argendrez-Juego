@@ -34,7 +34,7 @@ aquí](https://github.com/maximaldo/Argendrez-Juego/wiki/Propuesta-del-proyecto-
   
  - Un IDE compatible como Eclipse o IntelliJ IDEA.
 
-3. Clonar el repositorio:
+2. Clonar el repositorio:
 git clone https://github.com/maximaldo/Argendrez-Juego
 
 cd Argendrez-juego
@@ -43,7 +43,7 @@ cd Argendrez-juego
 
 3. Importar el Proyecto en Eclipse.
 
--Abrir Eclipse.
+- Abrir Eclipse.
 - Seleccionar File > Import > Gradle > Existing Gradle Project.
 - Seleccionar la carpeta del proyecto clonado (Argendrez-Juego).
 - Finalizar la importación y esperar que se sincronicen las dependencias.
