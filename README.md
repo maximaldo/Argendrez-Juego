@@ -39,7 +39,7 @@ cd Argendrez-juego
 
 Eclipse, IntelliJ IDEA o cualquier editor con terminal
 
-##3. Importar el Proyecto en Eclipse 
+3. Importar el Proyecto en Eclipse 
 
 1. Abrir Eclipse.
 2. Seleccionar File > Import > Gradle > Existing Gradle Project.
