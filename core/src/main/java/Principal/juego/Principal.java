@@ -1,34 +1,31 @@
 package Principal.juego;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
+import Principal.juego.interfaz.MenuPantalla;
+import Principal.juego.utiles.Render;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
-public class Main extends ApplicationAdapter {
+public class Principal extends Game {
     private SpriteBatch batch;
     private Texture image;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        image = new Texture("libgdx.png");
+        Render.batch = batch;
+        Render.app = this;
+        this.setScreen(new MenuPantalla()); //pantalla de carga
     }
 
     @Override
     public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        batch.begin();
-        batch.draw(image, 140, 210);
-        batch.end();
+        super.render(); //para renderizar la pantalla
     }
 
     @Override
     public void dispose() {
         batch.dispose();
-        image.dispose();
     }
 }
