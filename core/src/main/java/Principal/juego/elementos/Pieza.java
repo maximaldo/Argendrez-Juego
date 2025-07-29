@@ -1,26 +1,32 @@
 package Principal.juego.elementos;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Pieza {
     private Sprite sprite;
     private int fila;
     private int columna;
+    private boolean esBlanca;
 
-    public Pieza(TextureRegion region, int fila, int columna) {
-        this.sprite = new Sprite(region);
+    public Pieza(Texture textura, int fila, int columna, boolean esBlanca) {
+        this.sprite = new Sprite(textura);
         this.fila = fila;
         this.columna = columna;
-        actualizarPosicionEnPantalla();
+        this.esBlanca = esBlanca;
+    }
+    public void moverA(int nuevaFila, int nuevaColumna) {
+        this.fila = nuevaFila;
+        this.columna = nuevaColumna;
     }
 
-    public void actualizarPosicionEnPantalla() {
-        int tileSize = 64;
-        sprite.setPosition(columna * tileSize, fila * tileSize);
-    }
 
-    public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch) {
+    public void render(SpriteBatch batch, float tamanioCasilla, float offsetX, float offsetY) {
+        float x = offsetX + columna * tamanioCasilla;
+        float y = offsetY + fila * tamanioCasilla;
+        sprite.setSize(tamanioCasilla, tamanioCasilla);
+        sprite.setPosition(x, y);
         sprite.draw(batch);
     }
 
@@ -32,9 +38,7 @@ public class Pieza {
         return columna;
     }
 
-    public void moverA(int nuevaFila, int nuevaColumna) {
-        this.fila = nuevaFila;
-        this.columna = nuevaColumna;
-        actualizarPosicionEnPantalla();
+    public boolean esBlanca() {
+        return esBlanca;
     }
 }
