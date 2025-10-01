@@ -1,64 +1,111 @@
 package Principal.juego.interfaz;
 
-import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import Principal.juego.elementos.ColorPieza;
+import Principal.juego.elementos.GestorPiezas;
 import Principal.juego.elementos.Pieza;
+import Principal.juego.elementos.Reglas;
 
-public class InputJugador implements InputProcessor {
+import static Principal.juego.elementos.ColorPieza.*;
 
-    private Pieza[][] tablero;
-    private OrthographicCamera camara;
-    private Viewport viewport;
+public class InputJugador extends InputAdapter {
 
-    private int seleccionFila = -1;
-    private int seleccionColumna = -1;
+    private final GestorPiezas tablero;
+    private final Viewport viewport;
 
-    public InputJugador(Pieza[][] tablero, OrthographicCamera camara, Viewport viewport) {
+    private ColorPieza turno = BLANCO;
+    private int selX = -1, selY = -1;
+    private final List<int[]> legales = new ArrayList<>();
+    private final ShapeRenderer formas = new ShapeRenderer();
+
+    public InputJugador(GestorPiezas tablero, Viewport viewport) {
         this.tablero = tablero;
-        this.camara = camara;
         this.viewport = viewport;
     }
 
+    // === Expuesto para el HUD ===
+    public ColorPieza getTurno() { return turno; }
+    public void forzarCambioTurno() { turno = (turno == BLANCO) ? NEGRO : BLANCO; limpiarSeleccion(); }
+
     @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        Vector3 coords = new Vector3(screenX, screenY, 0);
-        viewport.unproject(coords);
+    public boolean touchDown (int screenX, int screenY, int pointer, int button) {
+        // bloquear input si hay animación, promoción o fin de juego
+        if (tablero.estaAnimando() || tablero.hayPromocionPendiente() || tablero.hayJuegoTerminado()) return true;
 
-        int tileCol = (int)(coords.x / 64);
-        int tileFila = (int)(coords.y / 64);
+        Vector2 world = new Vector2(screenX, screenY);
+        viewport.unproject(world);
 
-        if (tileCol < 0 || tileCol > 7 || tileFila < 0 || tileFila > 7) return false;
+        int x = (int) ((world.x - tablero.getOrigenX()) / tablero.getTamCelda());
+        int y = (int) ((world.y - tablero.getOrigenY()) / tablero.getTamCelda());
+        if (!tablero.enTablero(x, y)) { limpiarSeleccion(); return true; }
 
-        if (seleccionFila == -1 && seleccionColumna == -1) {
-            if (tablero[tileFila][tileCol] != null) {
-                seleccionFila = tileFila;
-                seleccionColumna = tileCol;
+        if (selX == -1) {
+            Pieza p = tablero.obtener(x, y);
+            if (p != null && p.color == turno) {
+                selX = x; selY = y;
+                legales.clear();
+                legales.addAll(Reglas.movimientosLegales(tablero, x, y, p));
             }
         } else {
-            Pieza piezaSeleccionada = tablero[seleccionFila][seleccionColumna];
-            if (piezaSeleccionada != null) {
-                tablero[seleccionFila][seleccionColumna] = null;
-                tablero[tileFila][tileCol] = piezaSeleccionada;
-                piezaSeleccionada.moverA(tileFila, tileCol);
+            for (int[] mv : legales) {
+                if (mv[0] == x && mv[1] == y) {
+                    if (tablero.moverConAnim(selX, selY, x, y)) {
+                        turno = (turno == BLANCO) ? NEGRO : BLANCO;
+                        limpiarSeleccion();
+                    }
+                    return true;
+                }
             }
-            seleccionFila = -1;
-            seleccionColumna = -1;
+            Pieza otra = tablero.obtener(x, y);
+            if (otra != null && otra.color == turno) {
+                selX = x; selY = y;
+                legales.clear();
+                legales.addAll(Reglas.movimientosLegales(tablero, x, y, otra));
+            } else {
+                limpiarSeleccion();
+            }
         }
         return true;
     }
 
-    @Override public boolean keyDown(int keycode) { return false; }
-    @Override public boolean keyUp(int keycode) { return false; }
-    @Override public boolean keyTyped(char character) { return false; }
-    @Override public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
-    @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
-    @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
-    @Override public boolean scrolled(float amountX, float amountY) { return false; }
+    public void dibujarOverlay(SpriteBatch batch) {
+        formas.setProjectionMatrix(batch.getProjectionMatrix());
 
-    @Override
-    public boolean touchCancelled(int pointer, int button, int x, int y) {
-        return false;
+        // Selección (contorno)
+        formas.begin(ShapeType.Line);
+        if (selX != -1) {
+            float x = tablero.getOrigenX() + selX * tablero.getTamCelda();
+            float y = tablero.getOrigenY() + selY * tablero.getTamCelda();
+            formas.setColor(1f, 1f, 0f, 1f);
+            formas.rect(x + 2, y + 2, tablero.getTamCelda() - 4, tablero.getTamCelda() - 4);
+        }
+        formas.end();
+
+        // Destinos (rellenos con alpha)
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        formas.begin(ShapeType.Filled);
+        formas.setColor(0f, 1f, 1f, 0.45f);
+        for (int[] mv : legales) {
+            float cx = tablero.getOrigenX() + mv[0] * tablero.getTamCelda() + tablero.getTamCelda() / 2f;
+            float cy = tablero.getOrigenY() + mv[1] * tablero.getTamCelda() + tablero.getTamCelda() / 2f;
+            formas.circle(cx, cy, tablero.getTamCelda() / 6f);
+        }
+        formas.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
+
+    private void limpiarSeleccion() { selX = selY = -1; legales.clear(); }
+    public void dispose() { formas.dispose(); }
 }

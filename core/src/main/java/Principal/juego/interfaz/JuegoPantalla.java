@@ -1,60 +1,129 @@
 package Principal.juego.interfaz;
 
-import com.badlogic.gdx.ScreenAdapter;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+
+import Principal.juego.elementos.ColorPieza;
 import Principal.juego.elementos.GestorPiezas;
 
-public class JuegoPantalla extends ScreenAdapter {
+public class JuegoPantalla implements Screen {
+
+    private static final int TAM_VIRTUAL = 800;
+
+    private final float segPorTurno;
+
     private SpriteBatch batch;
-    private Texture casillaClara;
-    private Texture casillaOscura;
-    private OrthographicCamera camara;
-    private GestorPiezas gestorPiezas;
+    private GestorPiezas tablero;
+    private InputJugador input;
+    private Viewport viewport;
 
-    private static final int FILAS = 8;
-    private static final int COLUMNAS = 8;
+    private Hud hud;
 
-    public JuegoPantalla() {
+    // promoción (renombrado)
+    private PromocionPantalla promoPantalla;
+
+    // mensaje fin de juego
+    private BitmapFont fontMsg;
+    private final GlyphLayout layout = new GlyphLayout();
+
+    public JuegoPantalla(float segPorTurno) {
+        this.segPorTurno = segPorTurno;
+    }
+
+    @Override
+    public void show() {
         batch = new SpriteBatch();
-        casillaClara = new Texture("square brown light_1x.png");
-        casillaOscura = new Texture("square brown dark_1x.png");
-        camara = new OrthographicCamera();
-        camara.setToOrtho(false, 800, 800);
-        gestorPiezas = new GestorPiezas();
+
+        viewport = new FitViewport(TAM_VIRTUAL, TAM_VIRTUAL);
+        viewport.apply(true);
+
+        tablero = new GestorPiezas();
+        tablero.onResize((int) viewport.getWorldWidth(), (int) viewport.getWorldHeight());
+
+        input = new InputJugador(tablero, viewport);
+        Gdx.input.setInputProcessor(new InputMultiplexer(input));
+
+        hud = new Hud(segPorTurno);
+
+        fontMsg = new BitmapFont();
+        fontMsg.getData().setScale(1.6f);
     }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(1, 1, 1, 1);
+        Gdx.gl.glClearColor(0,0,0,1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        camara.update();
-        batch.setProjectionMatrix(camara.combined);
+        viewport.apply();
+        batch.setProjectionMatrix(viewport.getCamera().combined);
 
+        tablero.actualizar(delta);
+
+        // 1) mundo
         batch.begin();
-
-        float tamanioCasilla = 80; // 800 / 10 deja margen
-        float offsetX = (800 - COLUMNAS * tamanioCasilla) / 2f;
-        float offsetY = (800 - FILAS * tamanioCasilla) / 2f;
-
-        for (int fila = 0; fila < FILAS; fila++) {
-            for (int col = 0; col < COLUMNAS; col++) {
-                Texture casilla = (fila + col) % 2 == 0 ? casillaClara : casillaOscura;
-                batch.draw(casilla, offsetX + col * tamanioCasilla, offsetY + fila * tamanioCasilla, tamanioCasilla, tamanioCasilla);
-            }
-        }
-
-        gestorPiezas.render(batch, tamanioCasilla, offsetX, offsetY);
-
+        tablero.dibujar(batch);
         batch.end();
+
+        // 2) overlay selección/mov
+        input.dibujarOverlay(batch);
+
+        // 3) HUD (si terminó, lo dibujo sin actualizar para “congelar” el tiempo)
+        if (!tablero.hayJuegoTerminado()) hud.update(delta, input);
+        hud.draw();
+
+        // 4) promoción: levantar pantalla si hace falta
+        if (tablero.hayPromocionPendiente() && promoPantalla == null) {
+            promoPantalla = new PromocionPantalla(tablero.getPromColor(), tipo -> {
+                tablero.promocionar(tipo);
+                // volver a input normal
+                Gdx.input.setInputProcessor(new InputMultiplexer(input));
+                // cerrar pantalla
+                promoPantalla.dispose();
+                promoPantalla = null;
+            });
+            // la pantalla de promoción recibe primero el input
+            Gdx.input.setInputProcessor(new InputMultiplexer(promoPantalla.getStage(), input));
+        }
+        if (promoPantalla != null) { promoPantalla.act(delta); promoPantalla.draw(); }
+
+        // 5) mensaje de victoria
+        if (tablero.hayJuegoTerminado()) {
+            String msg = "GANAN " + (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
+            layout.setText(fontMsg, msg);
+            batch.begin();
+            fontMsg.draw(batch, layout,
+                (viewport.getWorldWidth()  - layout.width) / 2f,
+                (viewport.getWorldHeight() + layout.height) / 2f);
+            batch.end();
+        }
     }
 
     @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        tablero.onResize((int) viewport.getWorldWidth(), (int) viewport.getWorldHeight());
+        hud.resize(width, height);
+        if (promoPantalla != null) promoPantalla.getStage().getViewport().update(width, height, true);
+    }
+
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
+
+    @Override
     public void dispose() {
-        batch.dispose();
-        casillaClara.dispose();
-        casillaOscura.dispose();
+        if (batch != null) batch.dispose();
+        if (tablero != null) tablero.dispose();
+        if (input != null) input.dispose();
+        if (hud != null) hud.dispose();
+        if (promoPantalla != null) promoPantalla.dispose();
+        if (fontMsg != null) fontMsg.dispose();
     }
 }
