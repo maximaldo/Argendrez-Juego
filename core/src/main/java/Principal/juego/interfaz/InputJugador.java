@@ -34,13 +34,11 @@ public class InputJugador extends InputAdapter {
         this.viewport = viewport;
     }
 
-    // === Expuesto para el HUD ===
     public ColorPieza getTurno() { return turno; }
     public void forzarCambioTurno() { turno = (turno == BLANCO) ? NEGRO : BLANCO; limpiarSeleccion(); }
 
     @Override
     public boolean touchDown (int screenX, int screenY, int pointer, int button) {
-        // bloquear input si hay animación, promoción o fin de juego
         if (tablero.estaAnimando() || tablero.hayPromocionPendiente() || tablero.hayJuegoTerminado()) return true;
 
         Vector2 world = new Vector2(screenX, screenY);
@@ -55,7 +53,7 @@ public class InputJugador extends InputAdapter {
             if (p != null && p.color == turno) {
                 selX = x; selY = y;
                 legales.clear();
-                legales.addAll(Reglas.movimientosLegales(tablero, x, y, p));
+                legales.addAll(Reglas.movimientosLegales(tablero, x, y, p, tablero.isModoExtra())); // << flag
             }
         } else {
             for (int[] mv : legales) {
@@ -71,7 +69,7 @@ public class InputJugador extends InputAdapter {
             if (otra != null && otra.color == turno) {
                 selX = x; selY = y;
                 legales.clear();
-                legales.addAll(Reglas.movimientosLegales(tablero, x, y, otra));
+                legales.addAll(Reglas.movimientosLegales(tablero, x, y, otra, tablero.isModoExtra()));
             } else {
                 limpiarSeleccion();
             }
@@ -82,7 +80,7 @@ public class InputJugador extends InputAdapter {
     public void dibujarOverlay(SpriteBatch batch) {
         formas.setProjectionMatrix(batch.getProjectionMatrix());
 
-        // Selección (contorno)
+        // Selección
         formas.begin(ShapeType.Line);
         if (selX != -1) {
             float x = tablero.getOrigenX() + selX * tablero.getTamCelda();
@@ -92,7 +90,7 @@ public class InputJugador extends InputAdapter {
         }
         formas.end();
 
-        // Destinos (rellenos con alpha)
+        // Destinos
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         formas.begin(ShapeType.Filled);

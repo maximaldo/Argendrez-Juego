@@ -12,52 +12,52 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import Principal.juego.elementos.ColorPieza;
 import Principal.juego.elementos.GestorPiezas;
+import Principal.juego.elementos.TipoPieza;
 
 public class JuegoPantalla implements Screen {
 
     private static final int TAM_VIRTUAL = 800;
 
     private final float segPorTurno;
+    private final boolean modoBonus; // reloj con bonus (EXTRA)
+    private final boolean modoExtra; // reglas extra (peón evolucionado, etc.)
 
     private SpriteBatch batch;
     private GestorPiezas tablero;
     private InputJugador input;
     private Viewport viewport;
-
     private Hud hud;
 
-    // promoción (renombrado)
     private PromocionPantalla promoPantalla;
 
-    // mensaje fin de juego
     private BitmapFont fontMsg;
     private final GlyphLayout layout = new GlyphLayout();
 
-    public JuegoPantalla(float segPorTurno) {
+    public JuegoPantalla(float segPorTurno) { this(segPorTurno, false, false); }
+    public JuegoPantalla(float segPorTurno, boolean modoBonus, boolean modoExtra) {
         this.segPorTurno = segPorTurno;
+        this.modoBonus = modoBonus;
+        this.modoExtra = modoExtra;
     }
 
-    @Override
-    public void show() {
+    @Override public void show() {
         batch = new SpriteBatch();
-
         viewport = new FitViewport(TAM_VIRTUAL, TAM_VIRTUAL);
         viewport.apply(true);
 
-        tablero = new GestorPiezas();
+        tablero = new GestorPiezas(modoExtra);
         tablero.onResize((int) viewport.getWorldWidth(), (int) viewport.getWorldHeight());
 
         input = new InputJugador(tablero, viewport);
         Gdx.input.setInputProcessor(new InputMultiplexer(input));
 
-        hud = new Hud(segPorTurno);
+        hud = new Hud(segPorTurno, modoBonus);
 
         fontMsg = new BitmapFont();
         fontMsg.getData().setScale(1.6f);
     }
 
-    @Override
-    public void render(float delta) {
+    @Override public void render(float delta) {
         Gdx.gl.glClearColor(0,0,0,1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -66,34 +66,45 @@ public class JuegoPantalla implements Screen {
 
         tablero.actualizar(delta);
 
-        // 1) mundo
-        batch.begin();
-        tablero.dibujar(batch);
-        batch.end();
+        // BONUS por captura (solo modoBonus y si no terminó)
+        if (modoBonus && !tablero.hayJuegoTerminado()) {
+            ColorPieza[] captor = new ColorPieza[1];
+            TipoPieza capturada = tablero.consumirPiezaCapturadaYReset(captor);
+            if (capturada != null && captor[0] != null) {
+                int bonus = capturada.bonusSegundos();
+                hud.sumarBonus(captor[0], bonus, segPorTurno * 2f);
+            }
+        }
 
-        // 2) overlay selección/mov
+        // Mundo
+        batch.begin(); tablero.dibujar(batch); batch.end();
         input.dibujarOverlay(batch);
 
-        // 3) HUD (si terminó, lo dibujo sin actualizar para “congelar” el tiempo)
-        if (!tablero.hayJuegoTerminado()) hud.update(delta, input);
+        // HUD y timeout por tiempo (EXTRA)
+        if (!tablero.hayJuegoTerminado()) {
+            hud.update(delta, input);
+
+            if (modoBonus && hud.hayPerdidaPorTiempo()) {
+                // perdió el de HUD.getPerdioPorTiempo(); gana el opuesto
+                ColorPieza perdio = hud.getPerdioPorTiempo();
+                ColorPieza gano   = (perdio == ColorPieza.BLANCO) ? ColorPieza.NEGRO : ColorPieza.BLANCO;
+                tablero.finalizarPorTiempo(gano);
+            }
+        }
         hud.draw();
 
-        // 4) promoción: levantar pantalla si hace falta
+        // Promoción
         if (tablero.hayPromocionPendiente() && promoPantalla == null) {
             promoPantalla = new PromocionPantalla(tablero.getPromColor(), tipo -> {
                 tablero.promocionar(tipo);
-                // volver a input normal
                 Gdx.input.setInputProcessor(new InputMultiplexer(input));
-                // cerrar pantalla
-                promoPantalla.dispose();
-                promoPantalla = null;
+                promoPantalla.dispose(); promoPantalla = null;
             });
-            // la pantalla de promoción recibe primero el input
             Gdx.input.setInputProcessor(new InputMultiplexer(promoPantalla.getStage(), input));
         }
         if (promoPantalla != null) { promoPantalla.act(delta); promoPantalla.draw(); }
 
-        // 5) mensaje de victoria
+        // Victoria (incluye por tiempo)
         if (tablero.hayJuegoTerminado()) {
             String msg = "GANAN " + (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
             layout.setText(fontMsg, msg);
@@ -105,20 +116,16 @@ public class JuegoPantalla implements Screen {
         }
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
+    @Override public void resize(int w, int h) {
+        viewport.update(w, h, true);
         tablero.onResize((int) viewport.getWorldWidth(), (int) viewport.getWorldHeight());
-        hud.resize(width, height);
-        if (promoPantalla != null) promoPantalla.getStage().getViewport().update(width, height, true);
+        hud.resize(w, h);
+        if (promoPantalla != null) promoPantalla.getStage().getViewport().update(w, h, true);
     }
-
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-
-    @Override
-    public void dispose() {
+    @Override public void dispose() {
         if (batch != null) batch.dispose();
         if (tablero != null) tablero.dispose();
         if (input != null) input.dispose();

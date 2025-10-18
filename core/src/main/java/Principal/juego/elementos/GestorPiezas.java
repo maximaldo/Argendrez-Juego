@@ -15,90 +15,71 @@ public class GestorPiezas {
 
     private final Pieza[][] casillas = new Pieza[N][N];
 
-    // Layout del tablero en pantalla
-    private int tamCelda;
-    private int tamTableroPx;
-    private int origenX, origenY;
+    private int tamCelda, tamTableroPx, origenX, origenY;
 
-    // -------- Animación de movimiento --------
-    private static final float DURACION_MOV = 0.18f; // segundos
-    private static final float ESCALA_DELTA = 0.08f; // zoom suave
+    private static final float DURACION_MOV = 0.18f;
+    private static final float ESCALA_DELTA = 0.08f;
 
     private MovimientoAnimado anim = null;
+    private static class MovimientoAnimado { Pieza pieza, capturada; int sx, sy, dx, dy; float t, dur; }
 
-    private static class MovimientoAnimado {
-        Pieza pieza;       // pieza que se mueve
-        Pieza capturada;   // pieza que estaba en destino (si había)
-        int sx, sy;        // celda origen
-        int dx, dy;        // celda destino
-        float t, dur;      // tiempo transcurrido y duración
-    }
+    private final boolean modoExtra;
 
-    // -------- Estado de fin de juego --------
+    // Fin de juego
     private boolean juegoTerminado = false;
     private ColorPieza ganador = null;
 
-    // -------- Promoción --------
+    // Promoción
     private boolean promocionPendiente = false;
-    private int promX, promY;
-    private ColorPieza promColor;
+    private int promX, promY; private ColorPieza promColor;
 
-    public GestorPiezas() {
+    // Señal para bonus
+    private ColorPieza ultimoCapturador = null; private TipoPieza piezaCapturada = null;
+
+    public GestorPiezas() { this(false); }
+    public GestorPiezas(boolean modoExtra) {
+        this.modoExtra = modoExtra;
         inicializarPosicion();
         onResize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
+    public boolean isModoExtra() { return modoExtra; }
 
-    // ====== Estado del tablero ======
+    // ===== API tablero =====
     public Pieza obtener(int x, int y) { return enTablero(x,y) ? casillas[y][x] : null; }
     public void  poner(int x, int y, Pieza p) { if (enTablero(x,y)) casillas[y][x] = p; }
     public boolean enTablero(int x, int y) { return x>=0 && x<N && y>=0 && y<N; }
 
-    /** Movimiento instantáneo (sin animar) */
     public boolean mover(int sx, int sy, int dx, int dy) {
         if (!enTablero(sx,sy) || !enTablero(dx,dy) || juegoTerminado || promocionPendiente) return false;
-        Pieza src = casillas[sy][sx];
-        if (src == null) return false;
+        Pieza src = casillas[sy][sx]; if (src == null) return false;
 
         Pieza capt = casillas[dy][dx];
-        casillas[dy][dx] = src;
-        casillas[sy][sx] = null;
+        casillas[dy][dx] = src; casillas[sy][sx] = null;
 
-        // victoria por capturar rey
-        if (capt != null && capt.tipo == REY) {
-            juegoTerminado = true;
-            ganador = src.color;
-        }
+        if (capt != null && capt.tipo == REY) { juegoTerminado = true; ganador = src.color; }
+        if (capt != null) { ultimoCapturador = src.color; piezaCapturada = capt.tipo; }
 
-        // promoción
         verificarPromocion(dx, dy, src);
-
         return true;
     }
 
-    /** Inicia animación de movimiento; bloquea nuevos movimientos hasta terminar */
     public boolean moverConAnim(int sx, int sy, int dx, int dy) {
         if (anim != null || juegoTerminado || promocionPendiente) return false;
         if (!enTablero(sx,sy) || !enTablero(dx,dy)) return false;
-
-        Pieza p = casillas[sy][sx];
-        if (p == null) return false;
+        Pieza p = casillas[sy][sx]; if (p == null) return false;
 
         anim = new MovimientoAnimado();
-        anim.pieza = p;
-        anim.capturada = casillas[dy][dx]; // puede ser null
-        anim.sx = sx; anim.sy = sy;
-        anim.dx = dx; anim.dy = dy;
-        anim.t = 0f;  anim.dur = DURACION_MOV;
+        anim.pieza = p; anim.capturada = casillas[dy][dx];
+        anim.sx = sx; anim.sy = sy; anim.dx = dx; anim.dy = dy;
+        anim.t = 0f; anim.dur = DURACION_MOV;
 
-        // liberamos origen y destino para controlar qué se dibuja durante la animación
-        casillas[sy][sx] = null;
-        casillas[dy][dx] = null;
+        casillas[sy][sx] = null; casillas[dy][dx] = null;
         return true;
     }
 
     public boolean estaAnimando() { return anim != null; }
 
-    // ====== Layout ======
+    // ===== Layout =====
     public void onResize(int ancho, int alto) {
         tamTableroPx = Math.min(ancho, alto) - 40;
         tamTableroPx = Math.max(tamTableroPx, 240);
@@ -107,47 +88,43 @@ public class GestorPiezas {
         origenX = (ancho  - tamTableroPx) / 2;
         origenY = (alto   - tamTableroPx) / 2;
     }
-
     public int getTamCelda() { return tamCelda; }
     public int getOrigenX()  { return origenX; }
     public int getOrigenY()  { return origenY; }
 
-    // ====== Update / Render ======
+    // ===== Update / Render =====
     public void actualizar(float dt) {
         if (anim != null) {
             anim.t += dt;
             if (anim.t >= anim.dur) {
-                // coloca pieza en destino y termina
                 casillas[anim.dy][anim.dx] = anim.pieza;
 
-                // victoria por capturar rey
                 if (anim.capturada != null && anim.capturada.tipo == REY) {
-                    juegoTerminado = true;
-                    ganador = anim.pieza.color;
+                    juegoTerminado = true; ganador = anim.pieza.color;
+                }
+                if (anim.capturada != null) {
+                    ultimoCapturador = anim.pieza.color;
+                    piezaCapturada = anim.capturada.tipo;
                 }
 
-                // promoción
                 verificarPromocion(anim.dx, anim.dy, anim.pieza);
-
                 anim = null;
             }
         }
     }
 
     private void verificarPromocion(int x, int y, Pieza p) {
-        if (p.tipo != PEON) return;
+        if (p.tipo != TipoPieza.PEON) return;
         if ((p.color == BLANCO && y == 7) || (p.color == NEGRO && y == 0)) {
             promocionPendiente = true;
-            promX = x; promY = y; promColor = p.color; // queda peón hasta que elijan
+            promX = x; promY = y; promColor = p.color;
         }
     }
 
     public void dibujar(SpriteBatch batch) {
-        // 1) Tablero
         Texture texTablero = Recursos.texturaTablero();
         if (texTablero != null) batch.draw(texTablero, origenX, origenY, tamTableroPx, tamTableroPx);
 
-        // 2) Piezas estáticas (ocultar destino mientras anima)
         for (int y = 0; y < N; y++) {
             for (int x = 0; x < N; x++) {
                 if (anim != null && x == anim.dx && y == anim.dy) continue;
@@ -158,10 +135,9 @@ public class GestorPiezas {
             }
         }
 
-        // 3) Efectos de animación
         if (anim != null) {
             float a = Math.min(1f, Math.max(0f, anim.t / anim.dur));
-            a = a * a * (3f - 2f * a); // smoothstep
+            a = a * a * (3f - 2f * a);
 
             float sxPx = origenX + anim.sx * tamCelda;
             float syPx = origenY + anim.sy * tamCelda;
@@ -170,23 +146,19 @@ public class GestorPiezas {
             float px = sxPx + (dxPx - sxPx) * a;
             float py = syPx + (dyPx - syPx) * a;
 
-            // fade de capturada (si hay)
             if (anim.capturada != null) {
-                float alphaFade = 1f - a; // 1 -> 0
+                float alphaFade = 1f - a;
                 Texture texCap = Recursos.texturaPieza(anim.capturada);
                 if (texCap != null) {
-                    batch.setColor(1f, 1f, 1f, alphaFade);
+                    batch.setColor(1f,1f,1f,alphaFade);
                     batch.draw(texCap, dxPx, dyPx, tamCelda, tamCelda);
-                    batch.setColor(1f, 1f, 1f, 1f);
+                    batch.setColor(1f,1f,1f,1f);
                 }
             }
 
-            // zoom suave de la pieza que se mueve
             float escala = 1f + ESCALA_DELTA * (float)Math.sin(Math.PI * a);
-            float w = tamCelda * escala;
-            float h = tamCelda * escala;
-            float cx = px + (tamCelda - w) / 2f;
-            float cy = py + (tamCelda - h) / 2f;
+            float w = tamCelda * escala, h = tamCelda * escala;
+            float cx = px + (tamCelda - w) / 2f, cy = py + (tamCelda - h) / 2f;
 
             Texture texMov = Recursos.texturaPieza(anim.pieza);
             if (texMov != null) batch.draw(texMov, cx, cy, w, h);
@@ -195,7 +167,7 @@ public class GestorPiezas {
 
     public void dispose() { Recursos.dispose(); }
 
-    // ====== API de fin de juego y promoción ======
+    // ===== Fin de juego / promoción / bonus =====
     public boolean hayJuegoTerminado() { return juegoTerminado; }
     public ColorPieza getGanador() { return ganador; }
 
@@ -203,15 +175,27 @@ public class GestorPiezas {
     public int getPromX() { return promX; }
     public int getPromY() { return promY; }
     public ColorPieza getPromColor() { return promColor; }
-
     public void promocionar(TipoPieza tipo) {
         if (!promocionPendiente) return;
-        // reemplazar peón por la pieza elegida
         casillas[promY][promX] = new Pieza(promColor, tipo);
         promocionPendiente = false;
     }
 
-    // ====== Inicial ======
+    /** Llama a esto para cerrar la partida por tiempo y declarar ganador. */
+    public void finalizarPorTiempo(ColorPieza ganador) {
+        this.juegoTerminado = true;
+        this.ganador = ganador;
+    }
+
+    public TipoPieza consumirPiezaCapturadaYReset(ColorPieza[] capturadorOut) {
+        if (piezaCapturada == null) return null;
+        TipoPieza t = piezaCapturada;
+        if (capturadorOut != null && capturadorOut.length > 0) capturadorOut[0] = ultimoCapturador;
+        piezaCapturada = null; ultimoCapturador = null;
+        return t;
+    }
+
+    // ===== Posición inicial =====
     private void inicializarPosicion() {
         for (int y=0;y<N;y++) for (int x=0;x<N;x++) casillas[y][x]=null;
 

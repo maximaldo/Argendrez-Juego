@@ -1,19 +1,19 @@
 package Principal.juego.elementos;
 
 public enum TipoPieza {
-    REY   (false, new int[][]{{ 1,0},{-1,0},{0,1},{0,-1},{ 1,1},{ 1,-1},{-1,1},{-1,-1}}, 1,          10_000, 'k', "king"),
-    REINA (true,  new int[][]{{ 1,0},{-1,0},{0,1},{0,-1},{ 1,1},{ 1,-1},{-1,1},{-1,-1}}, Integer.MAX_VALUE, 9, 'q', "queen"),
-    TORRE (true,  new int[][]{{ 1,0},{-1,0},{0,1},{0,-1}},                                Integer.MAX_VALUE, 5, 'r', "rook"),
-    ALFIL (true,  new int[][]{{ 1,1},{ 1,-1},{-1,1},{-1,-1}},                              Integer.MAX_VALUE, 3, 'b', "bishop"),
-    CABALLO(false,new int[][]{{ 1,2},{ 2,1},{ 2,-1},{ 1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}},1,          3, 'n', "knight"),
-    PEON  (false, null,                                                                     1,          1, 'p', "pawn"); // especial
+    REY   (false, new int[][]{{ 1,0},{-1,0},{0,1},{0,-1},{ 1,1},{ 1,-1},{-1,1},{-1,-1}}, 1,                10_000, 'k', "king"),
+    REINA (true,  new int[][]{{ 1,0},{-1,0},{0,1},{0,-1},{ 1,1},{ 1,-1},{-1,1},{-1,-1}}, Integer.MAX_VALUE, 9,     'q', "queen"),
+    TORRE (true,  new int[][]{{ 1,0},{-1,0},{0,1},{0,-1}},                                Integer.MAX_VALUE, 5,     'r', "rook"),
+    ALFIL (true,  new int[][]{{ 1,1},{ 1,-1},{-1,1},{-1,-1}},                              Integer.MAX_VALUE, 3,     'b', "bishop"),
+    CABALLO(false,new int[][]{{ 1,2},{ 2,1},{ 2,-1},{ 1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}},1,                3,     'n', "knight"),
+    PEON  (false, null,                                                                     1,                1,     'p', "pawn"); // especial
 
     private final boolean deslizador;
-    private final int[][] direcciones; // offsets (para CABALLO son saltos; para deslizadores, unitarios)
-    private final int maxPasos;        // 1 para rey/caballo; infinito para deslizadores
-    private final int valor;           // material
-    private final char fen;            // letra FEN en minúscula
-    private final String archivoBase;  // base de sprite: "pawn","rook",...
+    private final int[][] direcciones;
+    private final int maxPasos;
+    private final int valor;
+    private final char fen;
+    private final String archivoBase;
 
     TipoPieza(boolean deslizador, int[][] direcciones, int maxPasos, int valor, char fen, String archivoBase) {
         this.deslizador = deslizador;
@@ -44,6 +44,19 @@ public enum TipoPieza {
             case 'n': return CABALLO;
             case 'p': return PEON;
             default: throw new IllegalArgumentException("FEN inválido: " + c);
+        }
+    }
+
+    /** Bonus de tiempo por capturar esta pieza (segundos). */
+    public int bonusSegundos() {
+        switch (this) {
+            case PEON:    return 5;
+            case CABALLO:
+            case ALFIL:   return 8;
+            case TORRE:   return 10;
+            case REINA:   return 12;
+            case REY:     return 0; // si capturaste rey, ya terminó la partida
+            default:      return 0;
         }
     }
 }
