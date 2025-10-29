@@ -3,7 +3,6 @@ package Principal.juego.elementos;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-
 import Principal.juego.utiles.Recursos;
 
 import static Principal.juego.elementos.ColorPieza.*;
@@ -25,7 +24,6 @@ public class GestorPiezas {
 
     private final boolean modoExtra;
 
-    // Fin de juego
     private boolean juegoTerminado = false;
     private ColorPieza ganador = null;
 
@@ -33,8 +31,17 @@ public class GestorPiezas {
     private boolean promocionPendiente = false;
     private int promX, promY; private ColorPieza promColor;
 
-    // Señal para bonus
+    // Para bonus por captura
     private ColorPieza ultimoCapturador = null; private TipoPieza piezaCapturada = null;
+
+    // ===== EFECTOS DE CARTAS =====
+    private final boolean[][] noCapturable = new boolean[N][N];
+    private final boolean[][] congelada    = new boolean[N][N];
+    private final boolean[][] sprint       = new boolean[N][N];
+
+    // Color en cuyo COMIENZO DE TURNO debe EXPIRAR el efecto
+    private final ColorPieza[][] expiraNoCap = new ColorPieza[N][N];
+    private final ColorPieza[][] expiraCong  = new ColorPieza[N][N];
 
     public GestorPiezas() { this(false); }
     public GestorPiezas(boolean modoExtra) {
@@ -44,16 +51,25 @@ public class GestorPiezas {
     }
     public boolean isModoExtra() { return modoExtra; }
 
-    // ===== API tablero =====
     public Pieza obtener(int x, int y) { return enTablero(x,y) ? casillas[y][x] : null; }
     public void  poner(int x, int y, Pieza p) { if (enTablero(x,y)) casillas[y][x] = p; }
     public boolean enTablero(int x, int y) { return x>=0 && x<N && y>=0 && y<N; }
 
+    /** Intercambia 2 casillas (carta Reagrupación). */
+    public boolean intercambiar(int x1,int y1,int x2,int y2){
+        if(!enTablero(x1,y1)||!enTablero(x2,y2)) return false;
+        Pieza a=casillas[y1][x1], b=casillas[y2][x2];
+        casillas[y1][x1]=b; casillas[y2][x2]=a;
+        return true;
+    }
+
     public boolean mover(int sx, int sy, int dx, int dy) {
         if (!enTablero(sx,sy) || !enTablero(dx,dy) || juegoTerminado || promocionPendiente) return false;
         Pieza src = casillas[sy][sx]; if (src == null) return false;
-
+        if (congelada[sy][sx]) return false;                 // CONGELAR bloquea mover desde origen
         Pieza capt = casillas[dy][dx];
+        if (capt != null && noCapturable[dy][dx]) return false; // FORTIFICACIÓN impide capturar en destino
+
         casillas[dy][dx] = src; casillas[sy][sx] = null;
 
         if (capt != null && capt.tipo == REY) { juegoTerminado = true; ganador = src.color; }
@@ -68,8 +84,12 @@ public class GestorPiezas {
         if (!enTablero(sx,sy) || !enTablero(dx,dy)) return false;
         Pieza p = casillas[sy][sx]; if (p == null) return false;
 
+        if (congelada[sy][sx]) return false;
+        Pieza cap = casillas[dy][dx];
+        if (cap != null && noCapturable[dy][dx]) return false;
+
         anim = new MovimientoAnimado();
-        anim.pieza = p; anim.capturada = casillas[dy][dx];
+        anim.pieza = p; anim.capturada = cap;
         anim.sx = sx; anim.sy = sy; anim.dx = dx; anim.dy = dy;
         anim.t = 0f; anim.dur = DURACION_MOV;
 
@@ -79,7 +99,6 @@ public class GestorPiezas {
 
     public boolean estaAnimando() { return anim != null; }
 
-    // ===== Layout =====
     public void onResize(int ancho, int alto) {
         tamTableroPx = Math.min(ancho, alto) - 40;
         tamTableroPx = Math.max(tamTableroPx, 240);
@@ -92,7 +111,6 @@ public class GestorPiezas {
     public int getOrigenX()  { return origenX; }
     public int getOrigenY()  { return origenY; }
 
-    // ===== Update / Render =====
     public void actualizar(float dt) {
         if (anim != null) {
             anim.t += dt;
@@ -167,9 +185,9 @@ public class GestorPiezas {
 
     public void dispose() { Recursos.dispose(); }
 
-    // ===== Fin de juego / promoción / bonus =====
     public boolean hayJuegoTerminado() { return juegoTerminado; }
     public ColorPieza getGanador() { return ganador; }
+    public void finalizarPorTiempo(ColorPieza ganador) { this.juegoTerminado = true; this.ganador = ganador; }
 
     public boolean hayPromocionPendiente() { return promocionPendiente; }
     public int getPromX() { return promX; }
@@ -181,12 +199,6 @@ public class GestorPiezas {
         promocionPendiente = false;
     }
 
-    /** Llama a esto para cerrar la partida por tiempo y declarar ganador. */
-    public void finalizarPorTiempo(ColorPieza ganador) {
-        this.juegoTerminado = true;
-        this.ganador = ganador;
-    }
-
     public TipoPieza consumirPiezaCapturadaYReset(ColorPieza[] capturadorOut) {
         if (piezaCapturada == null) return null;
         TipoPieza t = piezaCapturada;
@@ -195,10 +207,63 @@ public class GestorPiezas {
         return t;
     }
 
-    // ===== Posición inicial =====
-    private void inicializarPosicion() {
-        for (int y=0;y<N;y++) for (int x=0;x<N;x++) casillas[y][x]=null;
+    // ======= EFECTOS: API y expiraciones =======
 
+    /** Llamar al COMIENZO de un turno (ya cambió el turno). */
+    public void tickEfectosAlComenzarTurno(ColorPieza turnoActual) {
+        for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
+            // Sprint: dura solo el turno anterior
+            sprint[y][x] = false;
+
+            // Fortificación / Congelar: expiran cuando "vuelve" el turno al que las jugó
+            if (noCapturable[y][x] && expiraNoCap[y][x] == turnoActual) {
+                noCapturable[y][x] = false; expiraNoCap[y][x] = null;
+            }
+            if (congelada[y][x] && expiraCong[y][x] == turnoActual) {
+                congelada[y][x] = false; expiraCong[y][x] = null;
+            }
+        }
+    }
+
+    /** Cancela TODO al instante (carta ANULAR). */
+    public void anularEfectos() {
+        for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
+            noCapturable[y][x] = false; congelada[y][x] = false; sprint[y][x] = false;
+            expiraNoCap[y][x] = null;   expiraCong[y][x]  = null;
+        }
+    }
+
+    /** Fortificación: protege durante TODO el turno del rival; expira cuando vuelve el turno del que la jugó. */
+    public void aplicarFortificacion(int x,int y, ColorPieza colorQueJugo) {
+        if (enTablero(x,y) && casillas[y][x] != null) {
+            noCapturable[y][x] = true;
+            expiraNoCap[y][x]  = colorQueJugo;
+        }
+    }
+
+    /** Congelar: la pieza rival no se mueve en su próximo turno; expira cuando vuelve el turno del que jugó. */
+    public void aplicarCongelar(int x,int y, ColorPieza colorQueJugo) {
+        if (enTablero(x,y) && casillas[y][x] != null) {
+            congelada[y][x] = true;
+            expiraCong[y][x] = colorQueJugo;
+        }
+    }
+
+    /** Sprint: +1 ortogonal SOLO este turno. */
+    public void aplicarSprint(int x,int y) {
+        if (enTablero(x,y) && casillas[y][x] != null) sprint[y][x] = true;
+    }
+
+    public boolean estaCongelada(int x,int y){ return enTablero(x,y) && congelada[y][x]; }
+    public boolean esNoCapturable(int x,int y){ return enTablero(x,y) && noCapturable[y][x]; }
+    public boolean tieneSprint(int x,int y){ return enTablero(x,y) && sprint[y][x]; }
+
+    private void inicializarPosicion() {
+        for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
+            casillas[y][x]=null;
+            noCapturable[y][x]=false; congelada[y][x]=false; sprint[y][x]=false;
+            expiraNoCap[y][x]=null;   expiraCong[y][x]=null;
+        }
         // Negras
         casillas[7][0]= new Pieza(NEGRO, TORRE);
         casillas[7][1]= new Pieza(NEGRO, CABALLO);
@@ -209,7 +274,6 @@ public class GestorPiezas {
         casillas[7][6]= new Pieza(NEGRO, CABALLO);
         casillas[7][7]= new Pieza(NEGRO, TORRE);
         for (int x=0;x<N;x++) casillas[6][x]= new Pieza(NEGRO, PEON);
-
         // Blancas
         casillas[0][0]= new Pieza(BLANCO, TORRE);
         casillas[0][1]= new Pieza(BLANCO, CABALLO);
