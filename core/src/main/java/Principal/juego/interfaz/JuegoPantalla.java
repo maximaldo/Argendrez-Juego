@@ -1,5 +1,6 @@
 package Principal.juego.interfaz;
 
+import Principal.juego.Principal;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
@@ -23,6 +24,8 @@ import Principal.juego.variantes.cartas.Ruleta;
 import Principal.juego.variantes.cartas.TipoCarta;
 
 public class JuegoPantalla implements Screen {
+
+    private final Principal app;
 
     private static final int TAM_VIRTUAL = 800;
     private static final int PANEL_W = 240; // ancho lateral del panel de cartas
@@ -48,12 +51,19 @@ public class JuegoPantalla implements Screen {
     private BitmapFont fontMsg;
     private final GlyphLayout layout = new GlyphLayout();
 
-    public JuegoPantalla(float segPorTurno) { this(segPorTurno, false, false); }
-    public JuegoPantalla(float segPorTurno, boolean modoBonus, boolean modoExtra) {
+    private float endTimer = 0f;  // tiempo transcurrido luego de terminar la partida
+
+    public JuegoPantalla(Principal app, float segPorTurno) {
+        this(app, segPorTurno, false, false);
+    }
+
+    public JuegoPantalla(Principal app, float segPorTurno, boolean modoBonus, boolean modoExtra) {
+        this.app = app;
         this.segPorTurno = segPorTurno;
         this.modoBonus = modoBonus;
         this.modoExtra = modoExtra;
     }
+
 
     @Override public void show() {
         batch = new SpriteBatch();
@@ -147,10 +157,13 @@ public class JuegoPantalla implements Screen {
         if (promoPantalla != null) { promoPantalla.act(delta); promoPantalla.draw(); }
 
         if (tablero.hayJuegoTerminado()) {
-            String msg = "GANAN " + (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
+
+            // --- MOSTRAR GANADOR (esto ya lo tenías, lo dejo igual) ---
+            String msg = "GANAN " +
+                (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
+
             layout.setText(fontMsg, msg);
 
-            // === CENTRADO SOBRE EL TABLERO (no toda la ventana) ===
             float boardW = tablero.getTamCelda() * 8f;
             float cx = tablero.getOrigenX() + (boardW - layout.width) / 2f;
             float cy = tablero.getOrigenY() + (boardW + layout.height) / 2f;
@@ -158,7 +171,21 @@ public class JuegoPantalla implements Screen {
             batch.begin();
             fontMsg.draw(batch, layout, cx, cy);
             batch.end();
+
+
+            // --- AGREGADO: CONTADOR DE 3 SEGUNDOS ---
+            endTimer += delta;
+
+            if (endTimer >= 3f) {
+                app.setScreen(new MenuPantalla(app));
+                dispose();
+                return;
+            }
+
+            // IMPORTANTE: cortar aquí el resto del render
+            return;
         }
+
     }
 
     @Override public void resize(int w, int h) {

@@ -130,7 +130,8 @@ public class MenuPantalla implements Screen {
         if (Recursos.musicaMenu != null) Recursos.musicaMenu.stop();
         Recursos.liberar();
         // extra => modoBonus=true y modoExtra=true ; clásico => ambos false
-        app.setScreen(new JuegoPantalla(seg, extra, extra));
+        app.setScreen(new JuegoPantalla(app, seg, extra, extra));
+
         dispose();
     }
 
