@@ -158,7 +158,7 @@ public class JuegoPantalla implements Screen {
 
         if (tablero.hayJuegoTerminado()) {
 
-            // --- MOSTRAR GANADOR (esto ya lo tenías, lo dejo igual) ---
+            // Mostrar ganador  
             String msg = "GANAN " +
                 (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
 
@@ -173,7 +173,7 @@ public class JuegoPantalla implements Screen {
             batch.end();
 
 
-            // --- AGREGADO: CONTADOR DE 3 SEGUNDOS ---
+            // Contador de 3 segundos
             endTimer += delta;
 
             if (endTimer >= 3f) {
