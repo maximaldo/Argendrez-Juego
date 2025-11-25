@@ -1,6 +1,9 @@
 package Principal.juego.interfaz;
 
+
 import Principal.juego.Principal;
+import Principal.juego.elementos.*;
+import Principal.juego.elementos.EfectosVisuales;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
@@ -15,10 +18,6 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.function.BiConsumer;
 
-import Principal.juego.elementos.ColorPieza;
-import Principal.juego.elementos.GestorPiezas;
-import Principal.juego.elementos.Pieza;
-import Principal.juego.elementos.TipoPieza;
 import Principal.juego.variantes.cartas.ManoCartas;
 import Principal.juego.variantes.cartas.Ruleta;
 import Principal.juego.variantes.cartas.TipoCarta;
@@ -40,16 +39,20 @@ public class JuegoPantalla implements Screen {
     private Viewport viewport;
     private Hud hud;
 
+
     private CartasHUD cartasHUD;
     private final Ruleta ruleta = new Ruleta();
     private final ManoCartas manoBlancas = new ManoCartas();
     private final ManoCartas manoNegras  = new ManoCartas();
     private boolean cartaJugadaEsteTurno = false;
 
+    private EfectosVisuales efectos;
+
     private PromocionPantalla promoPantalla;
 
     private BitmapFont fontMsg;
     private final GlyphLayout layout = new GlyphLayout();
+
 
     private float endTimer = 0f;  // tiempo transcurrido luego de terminar la partida
 
@@ -66,7 +69,9 @@ public class JuegoPantalla implements Screen {
 
 
     @Override public void show() {
+        EfectosVisuales.iniciar();
         batch = new SpriteBatch();
+        efectos = new EfectosVisuales();
         viewport = new FitViewport(TAM_VIRTUAL, TAM_VIRTUAL);
         viewport.apply(true);
 
@@ -117,6 +122,9 @@ public class JuegoPantalla implements Screen {
 
         batch.begin();
         tablero.dibujar(batch);
+        EfectosVisuales.render(  batch, tablero.getTamCelda(),tablero.getOrigenX(), tablero.getOrigenY() );
+
+
         batch.end();
 
         input.dibujarOverlay(batch);
@@ -158,7 +166,7 @@ public class JuegoPantalla implements Screen {
 
         if (tablero.hayJuegoTerminado()) {
 
-            // Mostrar ganador  
+            // Mostrar ganador
             String msg = "GANAN " +
                 (tablero.getGanador() == ColorPieza.BLANCO ? "BLANCAS" : "NEGRAS");
 
@@ -182,7 +190,7 @@ public class JuegoPantalla implements Screen {
                 return;
             }
 
-            // IMPORTANTE: cortar aquí el resto del render
+
             return;
         }
 
@@ -250,6 +258,7 @@ public class JuegoPantalla implements Screen {
         if (!modoExtra || tablero.hayJuegoTerminado() || cartaJugadaEsteTurno) return;
 
         switch (carta) {
+
             case PRORROGA:
                 hud.sumarBonus(input.getTurno(), 40, segPorTurno * 2f);
                 manoActual().gastar(carta);
@@ -259,6 +268,10 @@ public class JuegoPantalla implements Screen {
             case SPRINT:
                 seleccionarPropia((x,y)->{
                     tablero.aplicarSprint(x,y);
+
+                    // EFECTO VISUAL
+                    EfectosVisuales.dispararEfecto(x, y, TipoCarta.SPRINT);
+
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
                 });
@@ -267,6 +280,10 @@ public class JuegoPantalla implements Screen {
             case FORTIFICACION:
                 seleccionarPropia((x,y)->{
                     tablero.aplicarFortificacion(x,y, input.getTurno());
+
+                    // EFECTO VISUAL
+                    EfectosVisuales.dispararEfecto(x, y, TipoCarta.FORTIFICACION);
+
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
                 });
@@ -275,6 +292,10 @@ public class JuegoPantalla implements Screen {
             case CONGELAR:
                 seleccionarRival((x,y)->{
                     tablero.aplicarCongelar(x,y, input.getTurno());
+
+                    // EFECTO VISUAL
+                    EfectosVisuales.dispararEfecto(x, y, TipoCarta.CONGELAR);
+
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
                 });
@@ -283,6 +304,11 @@ public class JuegoPantalla implements Screen {
             case REAGRUPACION:
                 seleccionarDosPropiasAdyacentes((x1,y1,x2,y2)->{
                     tablero.intercambiar(x1,y1,x2,y2);
+
+                    // EFECTO VISUAL sobre ambas piezas
+                    EfectosVisuales.dispararEfecto(x1, y1, TipoCarta.REAGRUPACION);
+                    EfectosVisuales.dispararEfecto(x2, y2, TipoCarta.REAGRUPACION);
+
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
                 });
@@ -292,18 +318,27 @@ public class JuegoPantalla implements Screen {
                 seleccionarPropia((x,y)->{
                     Pieza p = tablero.obtener(x,y);
                     if (p != null && p.tipo == TipoPieza.PEON && p.color == input.getTurno()) {
+
                         int dir = p.color.dirPeon();
                         int nx = x, ny = y + dir;
+
                         if (tablero.enTablero(nx,ny) && tablero.obtener(nx,ny) == null) {
                             tablero.mover(x,y,nx,ny);
+
+                            // EFECTO VISUAL tanto en casilla vieja como nueva
+                            EfectosVisuales.dispararEfecto(x,  y, TipoCarta.TELEPEON);
+                            EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON);
                         }
                     }
+
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
                 });
                 break;
         }
     }
+
+
 
     // ===== helpers selección =====
     private void seleccionarPropia(BiConsumer<Integer,Integer> pick) {

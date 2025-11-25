@@ -15,9 +15,11 @@ import java.util.List;
 import Principal.juego.elementos.ColorPieza;
 import Principal.juego.elementos.GestorPiezas;
 import Principal.juego.elementos.Pieza;
+import Principal.juego.elementos.EfectosVisuales;
 import Principal.juego.elementos.Reglas;
 
 import static Principal.juego.elementos.ColorPieza.*;
+
 
 public class InputJugador extends InputAdapter {
 
@@ -33,6 +35,8 @@ public class InputJugador extends InputAdapter {
         this.tablero = tablero;
         this.viewport = viewport;
     }
+
+
 
     public ColorPieza getTurno() { return turno; }
     public void forzarCambioTurno() { turno = (turno == BLANCO) ? NEGRO : BLANCO; limpiarSeleccion(); }
@@ -59,6 +63,7 @@ public class InputJugador extends InputAdapter {
             for (int[] mv : legales) {
                 if (mv[0] == x && mv[1] == y) {
                     if (tablero.moverConAnim(selX, selY, x, y)) {
+                        EfectosVisuales.limpiar();
                         turno = (turno == BLANCO) ? NEGRO : BLANCO;
                         limpiarSeleccion();
                     }
