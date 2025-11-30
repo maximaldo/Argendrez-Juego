@@ -13,6 +13,7 @@ public class EfectosVisuales {
     private static Texture texReagrupar;
     private static Texture texCandado;
     private static Texture texHielo;
+    private static Texture texTelepeon;
 
     private static float duracion = 4.0f;  // cuánto dura el efecto visual
     private static float tiempo = 0f;
@@ -21,10 +22,11 @@ public class EfectosVisuales {
     private static Texture texturaActual = null;
 
     public static void iniciar() {
-        texSprint    = new Texture(Gdx.files.internal("Flecha_arriba.png"));
+        texSprint    = new Texture(Gdx.files.internal("imagenVacia.png"));
         texReagrupar = new Texture(Gdx.files.internal("Flechas_opuestas.png"));
         texCandado   = new Texture(Gdx.files.internal("Candado.png"));
         texHielo     = new Texture(Gdx.files.internal("coponieve.png"));
+        texTelepeon    = new Texture(Gdx.files.internal("Flecha_arriba.png"));
     }
 
     /** Llamado por GestorPiezas después de aplicar una carta */
@@ -51,6 +53,9 @@ public class EfectosVisuales {
                 texturaActual = texHielo;
                 break;
 
+            case TELEPEON:      // ← AGREGAR ESTA PARTE
+                texturaActual = texTelepeon;
+                break;
             default:
                 texturaActual = null;
         }
