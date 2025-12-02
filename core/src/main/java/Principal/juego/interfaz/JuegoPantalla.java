@@ -326,8 +326,9 @@ public class JuegoPantalla implements Screen {
                             tablero.mover(x,y,nx,ny);
 
                             // EFECTO VISUAL tanto en casilla vieja como nueva
-                            EfectosVisuales.dispararEfecto(x,  y, TipoCarta.TELEPEON);
-                            EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON);
+                            EfectosVisuales.dispararEfecto(x,  y, TipoCarta.TELEPEON, p.color);
+                            EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON, p.color);
+
                         }
                     }
 

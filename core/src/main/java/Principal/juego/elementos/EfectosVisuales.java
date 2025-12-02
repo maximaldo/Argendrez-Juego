@@ -14,6 +14,8 @@ public class EfectosVisuales {
     private static Texture texCandado;
     private static Texture texHielo;
     private static Texture texTelepeon;
+    private static Texture texTelepeonNegro;
+
 
     private static float duracion = 4.0f;  // cuánto dura el efecto visual
     private static float tiempo = 0f;
@@ -22,21 +24,29 @@ public class EfectosVisuales {
     private static Texture texturaActual = null;
 
     public static void iniciar() {
-        texSprint    = new Texture(Gdx.files.internal("imagenVacia.png"));
+        texSprint    = new Texture(Gdx.files.internal("FlechaTodasDirecciones.png"));
         texReagrupar = new Texture(Gdx.files.internal("Flechas_opuestas.png"));
         texCandado   = new Texture(Gdx.files.internal("Candado.png"));
         texHielo     = new Texture(Gdx.files.internal("coponieve.png"));
         texTelepeon    = new Texture(Gdx.files.internal("Flecha_arriba.png"));
+        texTelepeonNegro = new Texture(Gdx.files.internal("Flecha_abajo.png"));
+
+
+    }
+
+    public static void dispararEfecto(int x, int y, TipoCarta carta) {
+        dispararEfecto(x, y, carta, ColorPieza.BLANCO);
     }
 
     /** Llamado por GestorPiezas después de aplicar una carta */
-    public static void dispararEfecto(int x, int y, TipoCarta carta) {
+    public static void dispararEfecto(int x, int y, TipoCarta carta, ColorPieza color) {
 
         casX = x;
         casY = y;
         tiempo = -1;
 
         switch (carta) {
+
             case SPRINT:
                 texturaActual = texSprint;
                 break;
@@ -53,9 +63,14 @@ public class EfectosVisuales {
                 texturaActual = texHielo;
                 break;
 
-            case TELEPEON:      // ← AGREGAR ESTA PARTE
-                texturaActual = texTelepeon;
+            case TELEPEON:
+                if (color == ColorPieza.BLANCO) {
+                    texturaActual = texTelepeon;   // flecha arriba
+                } else {
+                    texturaActual = texTelepeonNegro;    // flecha abajo
+                }
                 break;
+
             default:
                 texturaActual = null;
         }
