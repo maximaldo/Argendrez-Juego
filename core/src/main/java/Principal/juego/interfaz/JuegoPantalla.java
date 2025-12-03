@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import Principal.juego.red.ClienteAjedrez;
 
 import java.util.function.BiConsumer;
 
@@ -38,6 +39,9 @@ public class JuegoPantalla implements Screen {
     private InputJugador input;
     private Viewport viewport;
     private Hud hud;
+
+    // --- Red ---
+    private ClienteAjedrez clienteRed;
 
 
     private CartasHUD cartasHUD;
@@ -82,6 +86,40 @@ public class JuegoPantalla implements Screen {
 
         input = new InputJugador(tablero, viewport);
         InputMultiplexer mux = new InputMultiplexer(input);
+
+        // Intentar iniciar modo online usando UDP + broadcast (mismos principios que el chat)
+        try {
+            clienteRed = new ClienteAjedrez(new ClienteAjedrez.ReceptorMensajes() {
+                @Override
+                public void onColorAsignado(ColorPieza color) {
+                    Gdx.app.log("RED", "Color asignado por el servidor: " + color);
+                    input.configurarModoOnline(color);
+                }
+
+                @Override
+                public void onMovimientoRecibido(int sx, int sy, int dx, int dy) {
+                    // Este callback viene de un hilo de red.
+                    // Usamos postRunnable para tocar LibGDX desde el hilo principal.
+                    Gdx.app.postRunnable(() -> {
+                        if (tablero.moverConAnim(sx, sy, dx, dy)) {
+                            EfectosVisuales.limpiar();
+                            input.forzarCambioTurno();
+                        }
+                    });
+                }
+
+                @Override
+                public void onConexionEstablecida() {
+                    Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
+                }
+            });
+            clienteRed.start();
+            input.setCliente(clienteRed);
+        } catch (Exception e) {
+            clienteRed = null;
+            Gdx.app.log("RED", "No se encontro servidor, se juega en modo local");
+        }
+
         Gdx.input.setInputProcessor(mux);
 
         hud = new Hud(segPorTurno, modoBonus);

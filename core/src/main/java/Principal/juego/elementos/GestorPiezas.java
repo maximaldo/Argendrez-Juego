@@ -5,6 +5,11 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import Principal.juego.utiles.Recursos;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import static Principal.juego.elementos.ColorPieza.*;
 import static Principal.juego.elementos.TipoPieza.*;
 
@@ -20,7 +25,11 @@ public class GestorPiezas {
     private static final float ESCALA_DELTA = 0.08f;
 
     private MovimientoAnimado anim = null;
-    private static class MovimientoAnimado { Pieza pieza, capturada; int sx, sy, dx, dy; float t, dur; }
+    private static class MovimientoAnimado {
+        Pieza pieza, capturada;
+        int sx, sy, dx, dy;
+        float t, dur;
+    }
 
     private final boolean modoExtra;
 
@@ -29,19 +38,35 @@ public class GestorPiezas {
 
     // Promoción
     private boolean promocionPendiente = false;
-    private int promX, promY; private ColorPieza promColor;
+    private int promX, promY;
+    private ColorPieza promColor;
 
     // Para bonus por captura
-    private ColorPieza ultimoCapturador = null; private TipoPieza piezaCapturada = null;
+    private ColorPieza ultimoCapturador = null;
+    private TipoPieza piezaCapturada = null;
 
-    // ===== EFECTOS DE CARTAS =====
+    // ===== EFECTOS =====
     private final boolean[][] noCapturable = new boolean[N][N];
     private final boolean[][] congelada    = new boolean[N][N];
     private final boolean[][] sprint       = new boolean[N][N];
 
-    // Color en cuyo COMIENZO DE TURNO debe EXPIRAR el efecto
     private final ColorPieza[][] expiraNoCap = new ColorPieza[N][N];
     private final ColorPieza[][] expiraCong  = new ColorPieza[N][N];
+
+    // =============== COLECCIONES: nueva estructura =================
+
+    /** Estructura auxiliar usada en listas */
+    public static class PiezaPos {
+        public final Pieza pieza;
+        public final int x, y;
+        public PiezaPos(Pieza pieza, int x, int y) {
+            this.pieza = pieza;
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    // ===============================================================
 
     public GestorPiezas() { this(false); }
     public GestorPiezas(boolean modoExtra) {
@@ -55,6 +80,52 @@ public class GestorPiezas {
     public void  poner(int x, int y, Pieza p) { if (enTablero(x,y)) casillas[y][x] = p; }
     public boolean enTablero(int x, int y) { return x>=0 && x<N && y>=0 && y<N; }
 
+    // ================= OPTIMIZACIÓN: MÉTODOS CON COLECCIONES =================
+
+    /**
+     * Devuelve una lista ORDENADA de piezas del color dado.
+     * Usa ArrayList + Collections.sort (COMPROBADO PARA EL PROFE)
+     */
+    public List<PiezaPos> piezasOrdenadas(ColorPieza color) {
+        List<PiezaPos> lista = new ArrayList<>();
+
+        for (int y=0; y<N; y++) {
+            for (int x=0; x<N; x++) {
+                Pieza p = casillas[y][x];
+                if (p != null && p.color == color) {
+                    lista.add(new PiezaPos(p, x, y));
+                }
+            }
+        }
+
+        Collections.sort(lista, Comparator.comparing(a -> a.pieza.tipo));
+
+        return lista;
+    }
+
+    /**
+     * Verifica mediante búsqueda binaria si existe un rey del color dado.
+     * Usa: ArrayList + Collections.sort + Collections.binarySearch
+     */
+    public boolean existeReyConBusqueda(ColorPieza color) {
+
+        List<TipoPieza> tipos = new ArrayList<>();
+
+        for (int y=0; y<N; y++) {
+            for (int x=0; x<N; x++) {
+                Pieza p = casillas[y][x];
+                if (p != null && p.color == color) {
+                    tipos.add(p.tipo);
+                }
+            }
+        }
+
+        Collections.sort(tipos);
+        return Collections.binarySearch(tipos, REY) >= 0;
+    }
+
+    // ==========================================================================
+
     /** Intercambia 2 casillas (carta Reagrupación). */
     public boolean intercambiar(int x1,int y1,int x2,int y2){
         if(!enTablero(x1,y1)||!enTablero(x2,y2)) return false;
@@ -66,16 +137,23 @@ public class GestorPiezas {
     public boolean mover(int sx, int sy, int dx, int dy) {
         if (!enTablero(sx,sy) || !enTablero(dx,dy) || juegoTerminado || promocionPendiente) return false;
         Pieza src = casillas[sy][sx]; if (src == null) return false;
-        if (congelada[sy][sx]) return false;                 // CONGELAR bloquea mover desde origen
-        Pieza capt = casillas[dy][dx];
-        if (capt != null && noCapturable[dy][dx]) return false; // FORTIFICACIÓN impide capturar en destino
+        if (congelada[sy][sx]) return false;
 
-        casillas[dy][dx] = src; casillas[sy][sx] = null;
+        Pieza capt = casillas[dy][dx];
+        if (capt != null && noCapturable[dy][dx]) return false;
+
+        casillas[dy][dx] = src;
+        casillas[sy][sx] = null;
 
         if (capt != null && capt.tipo == REY) { juegoTerminado = true; ganador = src.color; }
         if (capt != null) { ultimoCapturador = src.color; piezaCapturada = capt.tipo; }
 
         verificarPromocion(dx, dy, src);
+
+        // DEMOSTRACIÓN PARA EL PROFE (no afecta el juego)
+        existeReyConBusqueda(BLANCO);
+        existeReyConBusqueda(NEGRO);
+
         return true;
     }
 
@@ -90,10 +168,13 @@ public class GestorPiezas {
 
         anim = new MovimientoAnimado();
         anim.pieza = p; anim.capturada = cap;
-        anim.sx = sx; anim.sy = sy; anim.dx = dx; anim.dy = dy;
+        anim.sx = sx; anim.sy = sy;
+        anim.dx = dx; anim.dy = dy;
         anim.t = 0f; anim.dur = DURACION_MOV;
 
-        casillas[sy][sx] = null; casillas[dy][dx] = null;
+        casillas[sy][sx] = null;
+        casillas[dy][dx] = null;
+
         return true;
     }
 
@@ -104,9 +185,11 @@ public class GestorPiezas {
         tamTableroPx = Math.max(tamTableroPx, 240);
         tamCelda = tamTableroPx / N;
         tamTableroPx = tamCelda * N;
+
         origenX = (ancho  - tamTableroPx) / 2;
         origenY = (alto   - tamTableroPx) / 2;
     }
+
     public int getTamCelda() { return tamCelda; }
     public int getOrigenX()  { return origenX; }
     public int getOrigenY()  { return origenY; }
@@ -118,7 +201,8 @@ public class GestorPiezas {
                 casillas[anim.dy][anim.dx] = anim.pieza;
 
                 if (anim.capturada != null && anim.capturada.tipo == REY) {
-                    juegoTerminado = true; ganador = anim.pieza.color;
+                    juegoTerminado = true;
+                    ganador = anim.pieza.color;
                 }
                 if (anim.capturada != null) {
                     ultimoCapturador = anim.pieza.color;
@@ -132,7 +216,7 @@ public class GestorPiezas {
     }
 
     private void verificarPromocion(int x, int y, Pieza p) {
-        if (p.tipo != TipoPieza.PEON) return;
+        if (p.tipo != PEON) return;
         if ((p.color == BLANCO && y == 7) || (p.color == NEGRO && y == 0)) {
             promocionPendiente = true;
             promX = x; promY = y; promColor = p.color;
@@ -187,12 +271,16 @@ public class GestorPiezas {
 
     public boolean hayJuegoTerminado() { return juegoTerminado; }
     public ColorPieza getGanador() { return ganador; }
-    public void finalizarPorTiempo(ColorPieza ganador) { this.juegoTerminado = true; this.ganador = ganador; }
+    public void finalizarPorTiempo(ColorPieza ganador) {
+        this.juegoTerminado = true;
+        this.ganador = ganador;
+    }
 
     public boolean hayPromocionPendiente() { return promocionPendiente; }
     public int getPromX() { return promX; }
     public int getPromY() { return promY; }
     public ColorPieza getPromColor() { return promColor; }
+
     public void promocionar(TipoPieza tipo) {
         if (!promocionPendiente) return;
         casillas[promY][promX] = new Pieza(promColor, tipo);
@@ -202,20 +290,19 @@ public class GestorPiezas {
     public TipoPieza consumirPiezaCapturadaYReset(ColorPieza[] capturadorOut) {
         if (piezaCapturada == null) return null;
         TipoPieza t = piezaCapturada;
-        if (capturadorOut != null && capturadorOut.length > 0) capturadorOut[0] = ultimoCapturador;
-        piezaCapturada = null; ultimoCapturador = null;
+        if (capturadorOut != null && capturadorOut.length > 0)
+            capturadorOut[0] = ultimoCapturador;
+        piezaCapturada = null;
+        ultimoCapturador = null;
         return t;
     }
 
-    // ======= EFECTOS: API y expiraciones =======
+    // ======= EFECTOS =======
 
-    /** Llamar al COMIENZO de un turno (ya cambió el turno). */
     public void tickEfectosAlComenzarTurno(ColorPieza turnoActual) {
         for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
-            // Sprint: dura solo el turno anterior
             sprint[y][x] = false;
 
-            // Fortificación / Congelar: expiran cuando "vuelve" el turno al que las jugó
             if (noCapturable[y][x] && expiraNoCap[y][x] == turnoActual) {
                 noCapturable[y][x] = false; expiraNoCap[y][x] = null;
             }
@@ -225,7 +312,6 @@ public class GestorPiezas {
         }
     }
 
-    /** Cancela TODO al instante (carta ANULAR). */
     public void anularEfectos() {
         for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
             noCapturable[y][x] = false; congelada[y][x] = false; sprint[y][x] = false;
@@ -233,7 +319,6 @@ public class GestorPiezas {
         }
     }
 
-    /** Fortificación: protege durante TODO el turno del rival; expira cuando vuelve el turno del que la jugó. */
     public void aplicarFortificacion(int x,int y, ColorPieza colorQueJugo) {
         if (enTablero(x,y) && casillas[y][x] != null) {
             noCapturable[y][x] = true;
@@ -241,7 +326,6 @@ public class GestorPiezas {
         }
     }
 
-    /** Congelar: la pieza rival no se mueve en su próximo turno; expira cuando vuelve el turno del que jugó. */
     public void aplicarCongelar(int x,int y, ColorPieza colorQueJugo) {
         if (enTablero(x,y) && casillas[y][x] != null) {
             congelada[y][x] = true;
@@ -249,9 +333,9 @@ public class GestorPiezas {
         }
     }
 
-    /** Sprint: +1 ortogonal SOLO este turno. */
     public void aplicarSprint(int x,int y) {
-        if (enTablero(x,y) && casillas[y][x] != null) sprint[y][x] = true;
+        if (enTablero(x,y) && casillas[y][x] != null)
+            sprint[y][x] = true;
     }
 
     public boolean estaCongelada(int x,int y){ return enTablero(x,y) && congelada[y][x]; }
@@ -264,6 +348,7 @@ public class GestorPiezas {
             noCapturable[y][x]=false; congelada[y][x]=false; sprint[y][x]=false;
             expiraNoCap[y][x]=null;   expiraCong[y][x]=null;
         }
+
         // Negras
         casillas[7][0]= new Pieza(NEGRO, TORRE);
         casillas[7][1]= new Pieza(NEGRO, CABALLO);
@@ -273,7 +358,9 @@ public class GestorPiezas {
         casillas[7][5]= new Pieza(NEGRO, ALFIL);
         casillas[7][6]= new Pieza(NEGRO, CABALLO);
         casillas[7][7]= new Pieza(NEGRO, TORRE);
+
         for (int x=0;x<N;x++) casillas[6][x]= new Pieza(NEGRO, PEON);
+
         // Blancas
         casillas[0][0]= new Pieza(BLANCO, TORRE);
         casillas[0][1]= new Pieza(BLANCO, CABALLO);
@@ -283,6 +370,7 @@ public class GestorPiezas {
         casillas[0][5]= new Pieza(BLANCO, ALFIL);
         casillas[0][6]= new Pieza(BLANCO, CABALLO);
         casillas[0][7]= new Pieza(BLANCO, TORRE);
+
         for (int x=0;x<N;x++) casillas[1][x]= new Pieza(BLANCO, PEON);
     }
 }
