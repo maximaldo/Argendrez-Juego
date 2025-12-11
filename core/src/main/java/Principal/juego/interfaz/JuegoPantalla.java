@@ -97,6 +97,11 @@ public class JuegoPantalla implements Screen {
                 }
 
                 @Override
+                public void onCartaRecibida(String data) {
+                    Gdx.app.postRunnable(() -> aplicarCartaRemota(data));
+                }
+
+                @Override
                 public void onMovimientoRecibido(int sx, int sy, int dx, int dy) {
                     // Este callback viene de un hilo de red.
                     // Usamos postRunnable para tocar LibGDX desde el hilo principal.
@@ -292,6 +297,70 @@ public class JuegoPantalla implements Screen {
         }
     }
 
+    private void aplicarCartaRemota(String data) {
+        String[] p = data.split(",");
+
+        switch (p[0]) {
+
+            case "SPRINT": {
+                int x = Integer.parseInt(p[1]);
+                int y = Integer.parseInt(p[2]);
+                tablero.aplicarSprint(x, y);
+                EfectosVisuales.dispararEfecto(x, y, TipoCarta.SPRINT);
+                break;
+            }
+
+            case "FORTIFICACION": {
+                int x = Integer.parseInt(p[1]);
+                int y = Integer.parseInt(p[2]);
+                tablero.aplicarFortificacion(x, y, input.getTurno());
+                EfectosVisuales.dispararEfecto(x, y, TipoCarta.FORTIFICACION);
+                break;
+            }
+
+            case "CONGELAR": {
+                int x = Integer.parseInt(p[1]);
+                int y = Integer.parseInt(p[2]);
+                tablero.aplicarCongelar(x, y, input.getTurno());
+                EfectosVisuales.dispararEfecto(x, y, TipoCarta.CONGELAR);
+                break;
+            }
+
+            case "REAGRUPACION": {
+                int x1 = Integer.parseInt(p[1]);
+                int y1 = Integer.parseInt(p[2]);
+                int x2 = Integer.parseInt(p[3]);
+                int y2 = Integer.parseInt(p[4]);
+                tablero.intercambiar(x1, y1, x2, y2);
+                EfectosVisuales.dispararEfecto(x1, y1, TipoCarta.REAGRUPACION);
+                EfectosVisuales.dispararEfecto(x2, y2, TipoCarta.REAGRUPACION);
+                break;
+            }
+
+            case "TELEPEON": {
+                int x = Integer.parseInt(p[1]);
+                int y = Integer.parseInt(p[2]);
+                // acá NO validamos nada, ejecutamos
+                Pieza pz = tablero.obtener(x, y);
+                if (pz != null) {
+                    int dir = pz.color.dirPeon();
+                    int nx = x, ny = y + dir;
+                    tablero.mover(x, y, nx, ny);
+                    EfectosVisuales.dispararEfecto(x, y, TipoCarta.TELEPEON, pz.color);
+                    EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON, pz.color);
+                }
+                break;
+            }
+
+            case "PRORROGA": {
+                hud.sumarBonus(input.getTurno(), 40, segPorTurno * 2f);
+                break;
+            }
+        }
+    }
+
+
+
     private void intentarJugarCarta(TipoCarta carta) {
         if (!modoExtra || tablero.hayJuegoTerminado() || cartaJugadaEsteTurno) return;
 
@@ -301,79 +370,91 @@ public class JuegoPantalla implements Screen {
                 hud.sumarBonus(input.getTurno(), 40, segPorTurno * 2f);
                 manoActual().gastar(carta);
                 cartaJugadaEsteTurno = true;
+
+                if (clienteRed != null) {
+                    clienteRed.enviarCarta("PRORROGA");
+                }
                 break;
+
 
             case SPRINT:
                 seleccionarPropia((x,y)->{
                     tablero.aplicarSprint(x,y);
-
-                    // EFECTO VISUAL
                     EfectosVisuales.dispararEfecto(x, y, TipoCarta.SPRINT);
-
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
+
+                    if (clienteRed != null) {
+                        clienteRed.enviarCarta("SPRINT," + x + "," + y);
+                    }
                 });
                 break;
 
             case FORTIFICACION:
                 seleccionarPropia((x,y)->{
                     tablero.aplicarFortificacion(x,y, input.getTurno());
-
-                    // EFECTO VISUAL
                     EfectosVisuales.dispararEfecto(x, y, TipoCarta.FORTIFICACION);
-
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
+
+                    if (clienteRed != null) {
+                        clienteRed.enviarCarta("FORTIFICACION," + x + "," + y);
+                    }
                 });
                 break;
 
             case CONGELAR:
                 seleccionarRival((x,y)->{
                     tablero.aplicarCongelar(x,y, input.getTurno());
-
-                    // EFECTO VISUAL
                     EfectosVisuales.dispararEfecto(x, y, TipoCarta.CONGELAR);
-
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
+
+                    if (clienteRed != null) {
+                        clienteRed.enviarCarta("CONGELAR," + x + "," + y);
+                    }
                 });
                 break;
+
 
             case REAGRUPACION:
                 seleccionarDosPropiasAdyacentes((x1,y1,x2,y2)->{
                     tablero.intercambiar(x1,y1,x2,y2);
-
-                    // EFECTO VISUAL sobre ambas piezas
-                    EfectosVisuales.dispararEfecto(x1, y1, TipoCarta.REAGRUPACION);
-                    EfectosVisuales.dispararEfecto(x2, y2, TipoCarta.REAGRUPACION);
-
+                    EfectosVisuales.dispararEfecto(x1,y1,TipoCarta.REAGRUPACION);
+                    EfectosVisuales.dispararEfecto(x2,y2,TipoCarta.REAGRUPACION);
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
+
+                    if (clienteRed != null) {
+                        clienteRed.enviarCarta("REAGRUPACION,"+x1+","+y1+","+x2+","+y2);
+                    }
                 });
                 break;
+
 
             case TELEPEON:
                 seleccionarPropia((x,y)->{
                     Pieza p = tablero.obtener(x,y);
-                    if (p != null && p.tipo == TipoPieza.PEON && p.color == input.getTurno()) {
-
+                    if (p != null && p.tipo == TipoPieza.PEON) {
                         int dir = p.color.dirPeon();
-                        int nx = x, ny = y + dir;
-
-                        if (tablero.enTablero(nx,ny) && tablero.obtener(nx,ny) == null) {
+                        int nx = x;
+                        int ny = y + dir;
+                        if (tablero.enTablero(nx,ny) && tablero.obtener(nx,ny)==null) {
                             tablero.mover(x,y,nx,ny);
-
-                            // EFECTO VISUAL tanto en casilla vieja como nueva
-                            EfectosVisuales.dispararEfecto(x,  y, TipoCarta.TELEPEON, p.color);
+                            EfectosVisuales.dispararEfecto(x, y, TipoCarta.TELEPEON, p.color);
                             EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON, p.color);
-
                         }
                     }
 
                     manoActual().gastar(carta);
                     cartaJugadaEsteTurno = true;
+
+                    if (clienteRed != null) {
+                        clienteRed.enviarCarta("TELEPEON," + x + "," + y);
+                    }
                 });
                 break;
+
         }
     }
 

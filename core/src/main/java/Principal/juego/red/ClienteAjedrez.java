@@ -20,6 +20,7 @@ public class ClienteAjedrez extends Thread {
         void onColorAsignado(ColorPieza color);
         void onMovimientoRecibido(int sx, int sy, int dx, int dy);
         void onConexionEstablecida();
+        void onCartaRecibida(String data);
     }
 
     private final DatagramSocket socket;
@@ -77,6 +78,11 @@ public class ClienteAjedrez extends Thread {
             if (receptor != null) receptor.onConexionEstablecida();
             return;
         }
+        if (mensaje.startsWith("CARD:")) {
+            String data = mensaje.substring("CARD:".length());
+            if (receptor != null) receptor.onCartaRecibida(data);
+            return;
+        }
 
         if (mensaje.startsWith("COLOR:")) {
             String col = mensaje.substring("COLOR:".length()).trim();
@@ -102,6 +108,10 @@ public class ClienteAjedrez extends Thread {
                 }
             }
         }
+    }
+
+    public void enviarCarta(String data) {
+        enviarMensajePlano("CARD:" + data);
     }
 
     // === API pública para el juego ===
