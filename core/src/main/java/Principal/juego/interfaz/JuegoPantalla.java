@@ -362,7 +362,12 @@ public class JuegoPantalla implements Screen {
 
 
     private void intentarJugarCarta(TipoCarta carta) {
-        if (!modoExtra || tablero.hayJuegoTerminado() || cartaJugadaEsteTurno) return;
+        if (clienteRed != null && input.getTurno() != input.getColorLocal()) {
+            return;
+        }
+
+        if (!modoExtra || tablero.hayJuegoTerminado() || cartaJugadaEsteTurno)
+            return;
 
         switch (carta) {
 

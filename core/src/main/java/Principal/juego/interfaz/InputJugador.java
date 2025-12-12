@@ -53,6 +53,10 @@ public class InputJugador extends InputAdapter {
         return turno;
     }
 
+    public ColorPieza getColorLocal() {
+        return colorLocal;
+    }
+
     public void forzarCambioTurno() {
         turno = (turno == BLANCO) ? NEGRO : BLANCO;
         limpiarSeleccion();
