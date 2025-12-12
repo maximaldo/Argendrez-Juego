@@ -90,6 +90,7 @@ public class JuegoPantalla implements Screen {
         // Intentar iniciar modo online usando UDP + broadcast (mismos principios que el chat)
         try {
             clienteRed = new ClienteAjedrez(new ClienteAjedrez.ReceptorMensajes() {
+
                 @Override
                 public void onColorAsignado(ColorPieza color) {
                     Gdx.app.log("RED", "Color asignado por el servidor: " + color);
@@ -97,14 +98,7 @@ public class JuegoPantalla implements Screen {
                 }
 
                 @Override
-                public void onCartaRecibida(String data) {
-                    Gdx.app.postRunnable(() -> aplicarCartaRemota(data));
-                }
-
-                @Override
                 public void onMovimientoRecibido(int sx, int sy, int dx, int dy) {
-                    // Este callback viene de un hilo de red.
-                    // Usamos postRunnable para tocar LibGDX desde el hilo principal.
                     Gdx.app.postRunnable(() -> {
                         if (tablero.moverConAnim(sx, sy, dx, dy)) {
                             EfectosVisuales.limpiar();
@@ -114,10 +108,30 @@ public class JuegoPantalla implements Screen {
                 }
 
                 @Override
+                public void onCartaRecibida(String data) {
+                    Gdx.app.postRunnable(() -> aplicarCartaRemota(data));
+                }
+
+                @Override
+                public void onCartaRobada(ColorPieza color, TipoCarta carta) {
+                    Gdx.app.postRunnable(() -> {
+                        ManoCartas mano = (color == ColorPieza.BLANCO)
+                            ? manoBlancas
+                            : manoNegras;
+
+                        if (mano.puedeRobar()) {
+                            mano.robar(carta);
+                        }
+                    });
+                }
+
+                @Override
                 public void onConexionEstablecida() {
                     Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
                 }
             });
+
+
             clienteRed.start();
             input.setCliente(clienteRed);
         } catch (Exception e) {
@@ -278,8 +292,19 @@ public class JuegoPantalla implements Screen {
                     : ruleta.tickParaNegras();
 
                 if (daCarta) {
-                    ManoCartas manoQueEmpieza = (turnoActual == ColorPieza.BLANCO) ? manoBlancas : manoNegras;
-                    if (manoQueEmpieza.puedeRobar()) manoQueEmpieza.robar(ruleta.robarCarta());
+                    ManoCartas manoQueEmpieza = (turnoActual == ColorPieza.BLANCO)
+                        ? manoBlancas
+                        : manoNegras;
+
+                    if (manoQueEmpieza.puedeRobar()) {
+                        TipoCarta carta = ruleta.robarCarta();
+                        manoQueEmpieza.robar(carta);
+
+                        // SINCRONIZAR POR RED
+                        if (clienteRed != null) {
+                            clienteRed.enviarRoboCarta(turnoActual, carta);
+                        }
+                    }
                 }
 
                 if (cartasHUD != null) {

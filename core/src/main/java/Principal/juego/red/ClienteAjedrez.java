@@ -1,6 +1,7 @@
 package Principal.juego.red;
 
 import Principal.juego.elementos.ColorPieza;
+import Principal.juego.variantes.cartas.TipoCarta;
 
 import java.io.IOException;
 import java.net.*;
@@ -19,8 +20,9 @@ public class ClienteAjedrez extends Thread {
     public interface ReceptorMensajes {
         void onColorAsignado(ColorPieza color);
         void onMovimientoRecibido(int sx, int sy, int dx, int dy);
-        void onConexionEstablecida();
         void onCartaRecibida(String data);
+        void onCartaRobada(ColorPieza color, TipoCarta carta);
+        void onConexionEstablecida();
     }
 
     private final DatagramSocket socket;
@@ -108,10 +110,21 @@ public class ClienteAjedrez extends Thread {
                 }
             }
         }
+        if (mensaje.startsWith("DRAW:")) {
+            String[] p = mensaje.substring(5).split(",");
+            ColorPieza color = ColorPieza.valueOf(p[0]);
+            TipoCarta carta = TipoCarta.valueOf(p[1]);
+            if (receptor != null) receptor.onCartaRobada(color, carta);
+            return;
+        }
     }
 
     public void enviarCarta(String data) {
         enviarMensajePlano("CARD:" + data);
+    }
+
+    public void enviarRoboCarta(ColorPieza color, TipoCarta carta) {
+        enviarMensajePlano("DRAW:" + color + "," + carta.name());
     }
 
     // === API pública para el juego ===
