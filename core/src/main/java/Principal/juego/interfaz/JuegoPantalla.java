@@ -130,6 +130,12 @@ public class JuegoPantalla implements Screen {
                 public void onConexionEstablecida() {
                     Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
                 }
+                @Override
+                public void onPromocion(ColorPieza color, TipoPieza tipo) {
+                    Gdx.app.postRunnable(() -> {
+                        tablero.promocionar(tipo);
+                    });
+                }
 
                 @Override
                 public void onRuletaActualizada(ColorPieza color, int restante) {
@@ -218,18 +224,37 @@ public class JuegoPantalla implements Screen {
         }
 
 
-        if (tablero.hayPromocionPendiente() && promoPantalla == null) {
+        if (tablero.hayPromocionPendiente()
+            && promoPantalla == null
+            && (
+            !input.isModoOnline()
+                || tablero.getPromColor() == input.getColorLocal()
+        )
+        ) {
+
             promoPantalla = new PromocionPantalla(tablero.getPromColor(), tipo -> {
+
                 tablero.promocionar(tipo);
-                Gdx.input.setInputProcessor(new InputMultiplexer(
-                    (cartasHUD != null ? cartasHUD.getStage() : null), input));
+
+                // si estás en red, avisar al rival
+                if (input.isModoOnline() && clienteRed != null) {
+                    clienteRed.enviarPromocion(tablero.getPromColor(), tipo);
+                }
+
+                restoreInput();
+
                 promoPantalla.dispose();
                 promoPantalla = null;
             });
+
             if (cartasHUD != null)
-                Gdx.input.setInputProcessor(new InputMultiplexer(promoPantalla.getStage(), cartasHUD.getStage(), input));
+                Gdx.input.setInputProcessor(
+                    new InputMultiplexer(promoPantalla.getStage(), cartasHUD.getStage(), input)
+                );
             else
-                Gdx.input.setInputProcessor(new InputMultiplexer(promoPantalla.getStage(), input));
+                Gdx.input.setInputProcessor(
+                    new InputMultiplexer(promoPantalla.getStage(), input)
+                );
         }
         if (promoPantalla != null) { promoPantalla.act(delta); promoPantalla.draw(); }
 
