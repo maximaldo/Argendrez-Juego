@@ -56,6 +56,9 @@ public class InputJugador extends InputAdapter {
     public ColorPieza getColorLocal() {
         return colorLocal;
     }
+    public boolean isModoOnline() {
+        return modoOnline;
+    }
 
     public void forzarCambioTurno() {
         turno = (turno == BLANCO) ? NEGRO : BLANCO;

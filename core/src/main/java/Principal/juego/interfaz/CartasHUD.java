@@ -16,6 +16,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +35,7 @@ public class CartasHUD {
     private final Label lblTitulo, lblRuleta, lblTurno, lblDesc;
     private final TextButton btnC1, btnC2, btnUsar, btnCancelar;
     private final Listener listener;
+    private boolean habilitado = true;
 
     private TipoCarta carta1 = null, carta2 = null;
     private TipoCarta seleccionada = null;
@@ -83,18 +86,41 @@ public class CartasHUD {
         btnUsar.setDisabled(true);
 
         // Listeners cartas: seleccionar / desseleccionar
-        btnC1.addListener(e -> { if (btnC1.isPressed()) toggleSeleccion(carta1, btnC1, btnC2); return false; });
-        btnC2.addListener(e -> { if (btnC2.isPressed()) toggleSeleccion(carta2, btnC2, btnC1); return false; });
+        btnC1.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                if (!habilitado) return;
+                toggleSeleccion(carta1, btnC1, btnC2);
+            }
+        });
+
+        btnC2.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                if (!habilitado) return;
+                toggleSeleccion(carta2, btnC2, btnC1);
+            }
+        });
 
         // Usar / Cancelar
-        btnUsar.addListener(e -> {
-            if (btnUsar.isPressed() && seleccionada != null && listener != null) {
-                listener.onJugarCarta(seleccionada);
+        btnUsar.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                if (!habilitado) return;
+                if (seleccionada != null && listener != null && !btnUsar.isDisabled()) {
+                    listener.onJugarCarta(seleccionada);
+                    limpiarSeleccion();
+                }
+            }
+        });
+
+        btnCancelar.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                if (!habilitado) return;
                 limpiarSeleccion();
             }
-            return false;
         });
-        btnCancelar.addListener(e -> { if (btnCancelar.isPressed()) limpiarSeleccion(); return false; });
 
         // Layout
         Table inner = new Table();
@@ -128,8 +154,34 @@ public class CartasHUD {
         b.setColor(0.15f,0.18f,0.55f,0.95f);
     }
 
+    public void setHabilitado(boolean habilitado) {
+        this.habilitado = habilitado;
+
+        btnC1.setDisabled(!habilitado);
+        btnC2.setDisabled(!habilitado);
+        btnUsar.setDisabled(!habilitado || seleccionada == null);
+        btnCancelar.setDisabled(!habilitado);
+
+        // efecto visual: oscurecer
+        float alpha = habilitado ? 0.95f : 0.35f;
+
+     // color base normal
+        btnC1.setColor(0.15f, 0.18f, 0.55f, alpha);
+        btnC2.setColor(0.15f, 0.18f, 0.55f, alpha);
+
+    //  si hay una carta seleccionada y el HUD vuelve a habilitarse,
+    // restauramos el highlight correcto
+        if (habilitado && seleccionada != null) {
+            if (seleccionada == carta1) {
+                btnC1.setColor(0.30f, 0.35f, 0.85f, 0.95f);
+            } else if (seleccionada == carta2) {
+                btnC2.setColor(0.30f, 0.35f, 0.85f, 0.95f);
+            }
+        }
+    }
+
     private void toggleSeleccion(TipoCarta carta, TextButton self, TextButton other){
-        if (carta == null) return;
+        if (!habilitado || carta == null) return;
 
         if (seleccionada == carta) { // desseleccionar
             limpiarSeleccion();

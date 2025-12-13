@@ -207,6 +207,12 @@ public class JuegoPantalla implements Screen {
         if (modoExtra && cartasHUD != null) {
             cartasHUD.setTurno(input.getTurno());
             cartasHUD.setMano(manoActual().getCartas());
+
+            boolean esMiTurno = !input.isModoOnline()
+                || input.getTurno() == input.getColorLocal();
+
+            cartasHUD.setHabilitado(esMiTurno);
+
             cartasHUD.act(delta);
             cartasHUD.draw();
         }
@@ -365,6 +371,9 @@ public class JuegoPantalla implements Screen {
 
 
     private void intentarJugarCarta(TipoCarta carta) {
+        if (input.isModoOnline() && input.getTurno() != input.getColorLocal()) {
+            return;
+        }
         if (clienteRed != null && input.getTurno() != input.getColorLocal()) {
             return;
         }
