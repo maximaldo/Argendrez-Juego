@@ -125,9 +125,20 @@ public class JuegoPantalla implements Screen {
                     });
                 }
 
+
                 @Override
                 public void onConexionEstablecida() {
                     Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
+                }
+
+                @Override
+                public void onRuletaActualizada(ColorPieza color, int restante) {
+                    Gdx.app.postRunnable(() -> {
+                        // solo mostramos el contador del turno actual
+                        if (color == input.getTurno() && cartasHUD != null) {
+                            cartasHUD.setRuletaRestante(restante);
+                        }
+                    });
                 }
             });
 
@@ -145,12 +156,10 @@ public class JuegoPantalla implements Screen {
 
         if (modoExtra) {
             cartasHUD = new CartasHUD(this::intentarJugarCarta, PANEL_W);
-            int restante = (input.getTurno() == ColorPieza.BLANCO)
-                ? ruleta.getRestanteBlancas()
-                : ruleta.getRestanteNegras();
-            cartasHUD.setRuletaRestante(restante);
+
             cartasHUD.setTurno(input.getTurno());
             cartasHUD.setMano(manoActual().getCartas());
+
             mux = new InputMultiplexer(cartasHUD.getStage(), input);
             Gdx.input.setInputProcessor(mux);
         }
@@ -198,13 +207,10 @@ public class JuegoPantalla implements Screen {
         if (modoExtra && cartasHUD != null) {
             cartasHUD.setTurno(input.getTurno());
             cartasHUD.setMano(manoActual().getCartas());
-            int restante = (input.getTurno() == ColorPieza.BLANCO)
-                ? ruleta.getRestanteBlancas()
-                : ruleta.getRestanteNegras();
-            cartasHUD.setRuletaRestante(restante);
             cartasHUD.act(delta);
             cartasHUD.draw();
         }
+
 
         if (tablero.hayPromocionPendiente() && promoPantalla == null) {
             promoPantalla = new PromocionPantalla(tablero.getPromColor(), tipo -> {
@@ -282,42 +288,14 @@ public class JuegoPantalla implements Screen {
     private ColorPieza turnoPrevio = null;
     private void chequearCambioTurno() {
         ColorPieza turnoActual = input.getTurno();
-        if (turnoPrevio == null) { turnoPrevio = turnoActual; return; }
+        if (turnoPrevio == null) {
+            turnoPrevio = turnoActual;
+            return;
+        }
+
         if (turnoActual != turnoPrevio) {
             tablero.tickEfectosAlComenzarTurno(turnoActual);
-
-            if (modoExtra) {
-                boolean daCarta = (turnoActual == ColorPieza.BLANCO)
-                    ? ruleta.tickParaBlancas()
-                    : ruleta.tickParaNegras();
-
-                if (daCarta) {
-                    ManoCartas manoQueEmpieza = (turnoActual == ColorPieza.BLANCO)
-                        ? manoBlancas
-                        : manoNegras;
-
-                    if (manoQueEmpieza.puedeRobar()) {
-                        TipoCarta carta = ruleta.robarCarta();
-                        manoQueEmpieza.robar(carta);
-
-                        // SINCRONIZAR POR RED
-                        if (clienteRed != null) {
-                            clienteRed.enviarRoboCarta(turnoActual, carta);
-                        }
-                    }
-                }
-
-                if (cartasHUD != null) {
-                    int restante = (turnoActual == ColorPieza.BLANCO)
-                        ? ruleta.getRestanteBlancas()
-                        : ruleta.getRestanteNegras();
-                    cartasHUD.setTurno(turnoActual);
-                    cartasHUD.setMano(manoActual().getCartas());
-                    cartasHUD.setRuletaRestante(restante);
-                }
-
-                cartaJugadaEsteTurno = false;
-            }
+            cartaJugadaEsteTurno = false;
             turnoPrevio = turnoActual;
         }
     }

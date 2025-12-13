@@ -23,6 +23,7 @@ public class ClienteAjedrez extends Thread {
         void onCartaRecibida(String data);
         void onCartaRobada(ColorPieza color, TipoCarta carta);
         void onConexionEstablecida();
+        void onRuletaActualizada(ColorPieza color, int restante);
     }
 
     private final DatagramSocket socket;
@@ -110,11 +111,21 @@ public class ClienteAjedrez extends Thread {
                 }
             }
         }
+
         if (mensaje.startsWith("DRAW:")) {
             String[] p = mensaje.substring(5).split(",");
             ColorPieza color = ColorPieza.valueOf(p[0]);
             TipoCarta carta = TipoCarta.valueOf(p[1]);
             if (receptor != null) receptor.onCartaRobada(color, carta);
+            return;
+        }
+
+        if (mensaje.startsWith("RULETA:")) {
+            String[] p = mensaje.substring(7).split(",");
+            ColorPieza color = ColorPieza.valueOf(p[0]);
+            int restante = Integer.parseInt(p[1]);
+            if (receptor != null)
+                receptor.onRuletaActualizada(color, restante);
             return;
         }
     }

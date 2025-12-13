@@ -1,6 +1,9 @@
 package Principal.juego.red;
 
 import java.io.IOException;
+import Principal.juego.elementos.ColorPieza;
+import Principal.juego.variantes.cartas.Ruleta;
+import Principal.juego.variantes.cartas.TipoCarta;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,6 +29,9 @@ public class ServidorAjedrez extends Thread {
 
     private Cliente usuario1;
     private Cliente usuario2;
+
+    private final Ruleta ruleta = new Ruleta();
+    private ColorPieza turno = ColorPieza.BLANCO;
 
     public ServidorAjedrez() {
         try {
@@ -101,6 +107,41 @@ public class ServidorAjedrez extends Thread {
         // Para ajedrez nos interesa reenviar el mensaje TAL CUAL
         // (especialmente los "MOVE:x1,y1,x2,y2")
         enviarMensaje(mensaje, destino.ip, destino.puerto);
+        turno = (turno == ColorPieza.BLANCO)
+            ? ColorPieza.NEGRO
+            : ColorPieza.BLANCO;
+
+  // ===== RULETA (SOLO SERVIDOR) =====
+        boolean daCarta = (turno == ColorPieza.BLANCO)
+            ? ruleta.tickParaBlancas()
+            : ruleta.tickParaNegras();
+
+        int restante = (turno == ColorPieza.BLANCO)
+            ? ruleta.getRestanteBlancas()
+            : ruleta.getRestanteNegras();
+
+   // enviar contador actualizado a ambos
+        enviarMensaje(
+            "RULETA:" + turno + "," + restante,
+            usuario1.ip, usuario1.puerto
+        );
+        enviarMensaje(
+            "RULETA:" + turno + "," + restante,
+            usuario2.ip, usuario2.puerto
+        );
+
+        if (daCarta) {
+            TipoCarta carta = ruleta.robarCarta();
+
+            enviarMensaje(
+                "DRAW:" + turno + "," + carta.name(),
+                usuario1.ip, usuario1.puerto
+            );
+            enviarMensaje(
+                "DRAW:" + turno + "," + carta.name(),
+                usuario2.ip, usuario2.puerto
+            );
+        }
     }
 
     private void conectarNuevoCliente(DatagramPacket dp) {
