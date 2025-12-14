@@ -8,4 +8,8 @@ public class Principal extends Game {
     public void create() {
         setScreen(new MenuPantalla(this));
     }
+    @Override
+    public void dispose() {
+        super.dispose();
+    }
 }

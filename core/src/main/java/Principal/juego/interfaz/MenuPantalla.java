@@ -145,5 +145,9 @@ public class MenuPantalla implements Screen {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public void dispose() { if (stage!=null) stage.dispose(); if (tex1x1!=null) tex1x1.dispose(); }
+    @Override
+    public void dispose() {
+        if (stage != null) stage.dispose();
+        if (tex1x1 != null) tex1x1.dispose();
+    }
 }

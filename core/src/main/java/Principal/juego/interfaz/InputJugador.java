@@ -36,6 +36,8 @@ public class InputJugador extends InputAdapter {
     private ClienteAjedrez cliente;      // puede ser null si es modo local
     private boolean modoOnline = false;
     private ColorPieza colorLocal = BLANCO; // BLANCO o NEGRO según lo que diga el servidor
+    private boolean puedeJugar = false;
+
 
     // Constructor original (modo local)
     public InputJugador(GestorPiezas tablero, Viewport viewport) {
@@ -69,6 +71,7 @@ public class InputJugador extends InputAdapter {
     public void configurarModoOnline(ColorPieza colorLocal) {
         this.modoOnline = true;
         this.colorLocal = colorLocal;
+        this.puedeJugar = false;
         System.out.println("Modo online activado. Soy " + colorLocal);
     }
 
@@ -81,6 +84,13 @@ public class InputJugador extends InputAdapter {
         this.turno = nuevoTurno;
     }
 
+    public void setPuedeJugar(boolean v) {
+        this.puedeJugar = v;
+    }
+    public boolean puedeJugar() {
+        return puedeJugar;
+    }
+
     @Override
     public boolean touchDown (int screenX, int screenY, int pointer, int button) {
 
@@ -88,7 +98,8 @@ public class InputJugador extends InputAdapter {
             return true;
 
         // En modo online, si no es mi turno, ignoro el click
-        if (modoOnline && turno != colorLocal) {
+
+        if (modoOnline && (!puedeJugar || turno != colorLocal)) {
             return true;
         }
 

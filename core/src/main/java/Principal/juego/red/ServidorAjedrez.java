@@ -33,6 +33,8 @@ public class ServidorAjedrez extends Thread {
     private final Ruleta ruleta = new Ruleta();
     private ColorPieza turno = ColorPieza.BLANCO;
 
+    private boolean partidaIniciada = false;
+
     public ServidorAjedrez() {
         try {
             socket = new DatagramSocket(4321);
@@ -81,15 +83,12 @@ public class ServidorAjedrez extends Thread {
             return;
         }
 
-        // Si todavía no están los dos jugadores, no reenviamos nada
-        if (!conexionEstablecida()) {
-            enviarMensaje(
-                "Conexion no establecida",
-                datagrama.getAddress(),
-                datagrama.getPort()
-            );
+    //  NO aceptar acciones antes de que la partida esté iniciada
+        if (!partidaIniciada) {
+            System.out.println("[SERVER] Mensaje ignorado, partida no iniciada: " + mensaje);
             return;
         }
+
 
         Cliente emisor = obtenerRemitente(datagrama);
 
@@ -157,14 +156,15 @@ public class ServidorAjedrez extends Thread {
 
         if (usuario2 == null) {
             usuario2 = nuevo;
-            enviarMensaje("Conectado", nuevo.ip, nuevo.puerto);
             enviarMensaje("COLOR:NEGRO", nuevo.ip, nuevo.puerto);
 
             enviarMensaje("Conexion establecida", usuario1.ip, usuario1.puerto);
             enviarMensaje("Conexion establecida", usuario2.ip, usuario2.puerto);
-            System.out.println("[SERVER] Segundo jugador conectado (NEGRAS): " + nuevo);
+
+            partidaIniciada = true;
             return;
         }
+
 
         enviarMensaje(
             "Conexion denegada",

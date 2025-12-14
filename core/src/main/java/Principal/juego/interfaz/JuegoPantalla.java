@@ -126,9 +126,11 @@ public class JuegoPantalla implements Screen {
                 }
 
 
-                @Override
                 public void onConexionEstablecida() {
-                    Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
+                    Gdx.app.postRunnable(() -> {
+                        Gdx.app.log("RED", "Conexion establecida con el servidor de ajedrez");
+                        input.setPuedeJugar(true);
+                    });
                 }
                 @Override
                 public void onPromocion(ColorPieza color, TipoPieza tipo) {
@@ -201,11 +203,15 @@ public class JuegoPantalla implements Screen {
 
         input.dibujarOverlay(batch);
 
-        if (!tablero.hayJuegoTerminado()) {
+        if (!input.isModoOnline() || input.puedeJugar()) {
             hud.update(delta, input);
             if (modoBonus && hud.hayPerdidaPorTiempo()) {
                 ColorPieza perdio = hud.getPerdioPorTiempo();
-                tablero.finalizarPorTiempo(perdio == ColorPieza.BLANCO ? ColorPieza.NEGRO : ColorPieza.BLANCO);
+                tablero.finalizarPorTiempo(
+                    perdio == ColorPieza.BLANCO
+                        ? ColorPieza.NEGRO
+                        : ColorPieza.BLANCO
+                );
             }
         }
         hud.draw();
@@ -301,15 +307,43 @@ public class JuegoPantalla implements Screen {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public void dispose() {
-        if (batch != null) batch.dispose();
-        if (tablero != null) tablero.dispose();
-        if (input != null) input.dispose();
-        if (hud != null) hud.dispose();
-        if (cartasHUD != null) cartasHUD.dispose();
-        if (promoPantalla != null) promoPantalla.dispose();
-        if (fontMsg != null) fontMsg.dispose();
+    @Override
+    public void dispose() {
+
+        if (clienteRed != null) {
+            clienteRed.cerrar();   // CIERRA SOCKET UDP
+            clienteRed = null;
+        }
+
+        if (batch != null) {
+            batch.dispose();
+        }
+
+        if (tablero != null) {
+            tablero.dispose();     // libera texturas del tablero/piezas
+        }
+
+        if (input != null) {
+            input.dispose();       // shapeRenderer
+        }
+
+        if (hud != null) {
+            hud.dispose();
+        }
+
+        if (cartasHUD != null) {
+            cartasHUD.dispose();
+        }
+
+        if (promoPantalla != null) {
+            promoPantalla.dispose();
+        }
+
+        if (fontMsg != null) {
+            fontMsg.dispose();
+        }
     }
+
 
     // ====== cartas / ruleta ======
     private ManoCartas manoActual() {
