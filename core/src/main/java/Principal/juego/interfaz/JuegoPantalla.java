@@ -334,62 +334,87 @@ public class JuegoPantalla implements Screen {
     private void aplicarCartaRemota(String data) {
         String[] p = data.split(",");
 
-        switch (p[0]) {
+        TipoCarta carta = TipoCarta.valueOf(p[0]);
+        ColorPieza quienLaUso = ColorPieza.valueOf(p[1]);
 
-            case "SPRINT": {
-                int x = Integer.parseInt(p[1]);
-                int y = Integer.parseInt(p[2]);
+        // GASTAR LA CARTA EN LA MANO DEL QUE LA USÓ
+        if (!input.isModoOnline() || quienLaUso != input.getColorLocal()) {
+            ManoCartas manoDelQueUso =
+                (quienLaUso == ColorPieza.BLANCO)
+                    ? manoBlancas
+                    : manoNegras;
+
+            manoDelQueUso.gastar(carta);
+        }
+
+        switch (carta) {
+
+            case SPRINT: {
+                int x = Integer.parseInt(p[2]);
+                int y = Integer.parseInt(p[3]);
+
                 tablero.aplicarSprint(x, y);
                 EfectosVisuales.dispararEfecto(x, y, TipoCarta.SPRINT);
                 break;
             }
 
-            case "FORTIFICACION": {
-                int x = Integer.parseInt(p[1]);
-                int y = Integer.parseInt(p[2]);
-                tablero.aplicarFortificacion(x, y, input.getTurno());
+
+            case FORTIFICACION: {
+                int x = Integer.parseInt(p[2]);
+                int y = Integer.parseInt(p[3]);
+
+                tablero.aplicarFortificacion(x, y, quienLaUso);
                 EfectosVisuales.dispararEfecto(x, y, TipoCarta.FORTIFICACION);
                 break;
             }
 
-            case "CONGELAR": {
-                int x = Integer.parseInt(p[1]);
-                int y = Integer.parseInt(p[2]);
-                tablero.aplicarCongelar(x, y, input.getTurno());
+            case CONGELAR: {
+                int x = Integer.parseInt(p[2]);
+                int y = Integer.parseInt(p[3]);
+
+                tablero.aplicarCongelar(x, y, quienLaUso);
                 EfectosVisuales.dispararEfecto(x, y, TipoCarta.CONGELAR);
                 break;
             }
 
-            case "REAGRUPACION": {
-                int x1 = Integer.parseInt(p[1]);
-                int y1 = Integer.parseInt(p[2]);
-                int x2 = Integer.parseInt(p[3]);
-                int y2 = Integer.parseInt(p[4]);
+            case REAGRUPACION: {
+                int x1 = Integer.parseInt(p[2]);
+                int y1 = Integer.parseInt(p[3]);
+                int x2 = Integer.parseInt(p[4]);
+                int y2 = Integer.parseInt(p[5]);
+
                 tablero.intercambiar(x1, y1, x2, y2);
                 EfectosVisuales.dispararEfecto(x1, y1, TipoCarta.REAGRUPACION);
                 EfectosVisuales.dispararEfecto(x2, y2, TipoCarta.REAGRUPACION);
                 break;
             }
 
-            case "TELEPEON": {
-                int x = Integer.parseInt(p[1]);
-                int y = Integer.parseInt(p[2]);
-                // acá NO validamos nada, ejecutamos
+
+            case TELEPEON: {
+                int x = Integer.parseInt(p[2]);
+                int y = Integer.parseInt(p[3]);
+
                 Pieza pz = tablero.obtener(x, y);
-                if (pz != null) {
+                if (pz != null && pz.tipo == TipoPieza.PEON) {
                     int dir = pz.color.dirPeon();
-                    int nx = x, ny = y + dir;
-                    tablero.mover(x, y, nx, ny);
-                    EfectosVisuales.dispararEfecto(x, y, TipoCarta.TELEPEON, pz.color);
-                    EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON, pz.color);
+                    int nx = x;
+                    int ny = y + dir;
+
+                    if (tablero.enTablero(nx, ny) && tablero.obtener(nx, ny) == null) {
+                        tablero.mover(x, y, nx, ny);
+                        EfectosVisuales.dispararEfecto(x, y, TipoCarta.TELEPEON, pz.color);
+                        EfectosVisuales.dispararEfecto(nx, ny, TipoCarta.TELEPEON, pz.color);
+                    }
                 }
                 break;
             }
 
-            case "PRORROGA": {
-                hud.sumarBonus(input.getTurno(), 40, segPorTurno * 2f);
+
+            case PRORROGA: {
+                hud.sumarBonus(quienLaUso, 40, segPorTurno * 2f);
                 break;
             }
+
         }
     }
 
@@ -414,7 +439,9 @@ public class JuegoPantalla implements Screen {
                 cartaJugadaEsteTurno = true;
 
                 if (clienteRed != null) {
-                    clienteRed.enviarCarta("PRORROGA");
+                    clienteRed.enviarCarta(
+                        "PRORROGA," + input.getTurno()
+                    );
                 }
                 break;
 
@@ -427,7 +454,9 @@ public class JuegoPantalla implements Screen {
                     cartaJugadaEsteTurno = true;
 
                     if (clienteRed != null) {
-                        clienteRed.enviarCarta("SPRINT," + x + "," + y);
+                        clienteRed.enviarCarta(
+                            "SPRINT," + input.getTurno() + "," + x + "," + y
+                        );
                     }
                 });
                 break;
@@ -440,7 +469,9 @@ public class JuegoPantalla implements Screen {
                     cartaJugadaEsteTurno = true;
 
                     if (clienteRed != null) {
-                        clienteRed.enviarCarta("FORTIFICACION," + x + "," + y);
+                        clienteRed.enviarCarta(
+                            "FORTIFICACION," + input.getTurno() + "," + x + "," + y
+                        );
                     }
                 });
                 break;
@@ -453,7 +484,9 @@ public class JuegoPantalla implements Screen {
                     cartaJugadaEsteTurno = true;
 
                     if (clienteRed != null) {
-                        clienteRed.enviarCarta("CONGELAR," + x + "," + y);
+                        clienteRed.enviarCarta(
+                            "CONGELAR," + input.getTurno() + "," + x + "," + y
+                        );
                     }
                 });
                 break;
@@ -468,7 +501,12 @@ public class JuegoPantalla implements Screen {
                     cartaJugadaEsteTurno = true;
 
                     if (clienteRed != null) {
-                        clienteRed.enviarCarta("REAGRUPACION,"+x1+","+y1+","+x2+","+y2);
+                        clienteRed.enviarCarta(
+                            "REAGRUPACION," + input.getTurno()
+                                + "," + x1 + "," + y1
+                                + "," + x2 + "," + y2
+                        );
+
                     }
                 });
                 break;
@@ -492,7 +530,9 @@ public class JuegoPantalla implements Screen {
                     cartaJugadaEsteTurno = true;
 
                     if (clienteRed != null) {
-                        clienteRed.enviarCarta("TELEPEON," + x + "," + y);
+                        clienteRed.enviarCarta(
+                            "TELEPEON," + input.getTurno() + "," + x + "," + y
+                        );
                     }
                 });
                 break;
