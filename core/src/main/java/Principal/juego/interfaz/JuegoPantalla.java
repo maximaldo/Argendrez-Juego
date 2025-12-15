@@ -20,7 +20,6 @@ import Principal.juego.red.ClienteAjedrez;
 import java.util.function.BiConsumer;
 
 import Principal.juego.variantes.cartas.ManoCartas;
-import Principal.juego.variantes.cartas.Ruleta;
 import Principal.juego.variantes.cartas.TipoCarta;
 
 public class JuegoPantalla implements Screen {
@@ -46,7 +45,6 @@ public class JuegoPantalla implements Screen {
 
 
     private CartasHUD cartasHUD;
-    private final Ruleta ruleta = new Ruleta();
     private final ManoCartas manoBlancas = new ManoCartas();
     private final ManoCartas manoNegras  = new ManoCartas();
     private boolean cartaJugadaEsteTurno = false;
