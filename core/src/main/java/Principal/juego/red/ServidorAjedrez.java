@@ -27,8 +27,9 @@ public class ServidorAjedrez extends Thread {
 
     private DatagramSocket socket;
 
-    private Cliente usuario1;
-    private Cliente usuario2;
+    private static final int MAX_CLIENTES = 2;
+    private Cliente[] clientes = new Cliente[MAX_CLIENTES];
+
 
     private final Ruleta ruleta = new Ruleta();
     private ColorPieza turno = ColorPieza.BLANCO;
@@ -73,11 +74,13 @@ public class ServidorAjedrez extends Thread {
             datagrama.getLength()
         ).trim();
 
-        System.out.println("[SERVER] " + datagrama.getSocketAddress() + " -> " + mensaje);
+        if (!mensaje.equals("PING")) {
+            System.out.println("[SERVER] " + datagrama.getSocketAddress() + " -> " + mensaje);
+        }
 
         // Discovery por broadcast
-        if (mensaje.equals("Hello_there")) {
-            enviarMensaje("General_Kenobi", datagrama.getAddress(), datagrama.getPort());
+        if (mensaje.equals("BUSCAR")) {
+            enviarMensaje("ENCONTRAR", datagrama.getAddress(), datagrama.getPort());
             return;
         }
 
@@ -91,6 +94,10 @@ public class ServidorAjedrez extends Thread {
             if (c != null) {
                 desconectarCliente(c);
             }
+            return;
+        }
+        if (mensaje.equals("PING")) {
+            enviarMensaje("PONG", datagrama.getAddress(), datagrama.getPort());
             return;
         }
 
@@ -135,11 +142,11 @@ public class ServidorAjedrez extends Thread {
    // enviar contador actualizado a ambos
         enviarMensaje(
             "RULETA:" + turno + "," + restante,
-            usuario1.ip, usuario1.puerto
+            clientes[0].ip, clientes[0].puerto
         );
         enviarMensaje(
             "RULETA:" + turno + "," + restante,
-            usuario2.ip, usuario2.puerto
+            clientes[1].ip, clientes[1].puerto
         );
 
         if (daCarta) {
@@ -147,11 +154,11 @@ public class ServidorAjedrez extends Thread {
 
             enviarMensaje(
                 "DRAW:" + turno + "," + carta.name(),
-                usuario1.ip, usuario1.puerto
+                clientes[0].ip, clientes[0].puerto
             );
             enviarMensaje(
                 "DRAW:" + turno + "," + carta.name(),
-                usuario2.ip, usuario2.puerto
+                clientes[1].ip, clientes[1].puerto
             );
         }
     }
@@ -166,8 +173,8 @@ public class ServidorAjedrez extends Thread {
     }
 
     private void desconectarCliente(Cliente c) {
-        if (c == usuario1) usuario1 = null;
-        if (c == usuario2) usuario2 = null;
+        if (c == clientes[0]) clientes[0] = null;
+        if (c == clientes[1]) clientes[1] = null;
 
         // Reset del estado de partida
         turno = ColorPieza.BLANCO;
@@ -178,47 +185,75 @@ public class ServidorAjedrez extends Thread {
 
 
     private void conectarNuevoCliente(DatagramPacket dp) {
+
+        InetAddress ip = dp.getAddress();
+        int port = dp.getPort();
+
+        //  Buscar si ya estaba conectado
+        int slotExistente = buscarSlotPorDireccion(ip, port);
+        if (slotExistente != -1) {
+            System.out.println("[SERVER] Cliente ya conectado en slot " + slotExistente);
+            return;
+        }
+
+        int slotLibre = buscarSlotLibre();
+        if (slotLibre == -1) {
+            enviarMensaje("Conexion denegada", ip, port);
+            return;
+        }
+
         Cliente nuevo = new Cliente(dp);
+        clientes[slotLibre] = nuevo;
 
-        if (usuario1 == null) {
-            usuario1 = nuevo;
-            enviarMensaje("Conectado", nuevo.ip, nuevo.puerto);
-            enviarMensaje("COLOR:BLANCO", nuevo.ip, nuevo.puerto);
-            System.out.println("[SERVER] Primer jugador conectado (BLANCAS): " + nuevo);
-            return;
+        if (slotLibre == 0) {
+            enviarMensaje("COLOR:BLANCO", ip, port);
+            System.out.println("[SERVER] BLANCAS conectado");
+        } else {
+            enviarMensaje("COLOR:NEGRO", ip, port);
+            System.out.println("[SERVER] NEGRAS conectado");
         }
 
-        if (usuario2 == null) {
-            usuario2 = nuevo;
-            enviarMensaje("COLOR:NEGRO", nuevo.ip, nuevo.puerto);
-
-            enviarMensaje("Conexion establecida", usuario1.ip, usuario1.puerto);
-            enviarMensaje("Conexion establecida", usuario2.ip, usuario2.puerto);
-
+        // si ya están los dos → iniciar partida
+        if (clientes[0] != null && clientes[1] != null) {
+            enviarMensaje("Conexion establecida", clientes[0].ip, clientes[0].puerto);
+            enviarMensaje("Conexion establecida", clientes[1].ip, clientes[1].puerto);
             partidaIniciada = true;
-            return;
+            System.out.println("[SERVER] Partida iniciada");
         }
-
-
-        enviarMensaje(
-            "Conexion denegada",
-            nuevo.ip,
-            nuevo.puerto
-        );
     }
 
+    private int buscarSlotPorDireccion(InetAddress ip, int puerto) {
+        for (int i = 0; i < MAX_CLIENTES; i++) {
+            Cliente c = clientes[i];
+            if (c != null && c.ip.equals(ip) && c.puerto == puerto) {
+                return i;
+            }
+        }
+        return -1; // no encontrado
+    }
+    private int buscarSlotLibre() {
+        for (int i = 0; i < MAX_CLIENTES; i++) {
+            if (clientes[i] == null) {
+                return i;
+            }
+        }
+        return -1; // no hay lugar
+    }
+
+
+
     private boolean conexionEstablecida() {
-        return usuario1 != null && usuario2 != null;
+        return clientes[0] != null && clientes[1] != null;
     }
 
     private Cliente obtenerRemitente(DatagramPacket dp) {
-        if (usuario1 != null && usuario1.esEste(dp)) return usuario1;
-        if (usuario2 != null && usuario2.esEste(dp)) return usuario2;
+        if (clientes[0] != null && clientes[0].esEste(dp)) return clientes[0];
+        if (clientes[1] != null && clientes[1].esEste(dp)) return clientes[1];
         return null;
     }
 
     private Cliente obtenerOtro(Cliente emisor) {
-        return emisor == usuario1 ? usuario2 : usuario1;
+        return emisor == clientes[0] ? clientes[1] : clientes[0];
     }
 
     private void enviarMensaje(String mensaje, InetAddress ipDestino, int puertoDestino) {

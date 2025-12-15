@@ -26,12 +26,16 @@ public class ClienteAjedrez extends Thread {
         void onConexionEstablecida();
         void onRuletaActualizada(ColorPieza color, int restante);
         void onPromocion(ColorPieza color, TipoPieza tipo);
+        void onServidorCaido();
     }
 
     private final DatagramSocket socket;
     private final InetAddress ipServer;
     private final int puertoServidor;
     private final ReceptorMensajes receptor;
+    private long lastPing = 0;
+    private long lastPong = System.currentTimeMillis();
+    private static final long PING_INTERVAL = 1000;
 
     private volatile boolean fin = false;
     public volatile boolean conexionEstablecida = false;
@@ -41,6 +45,7 @@ public class ClienteAjedrez extends Thread {
         try {
             this.socket = new DatagramSocket();
             this.socket.setBroadcast(true);
+            socket.setSoTimeout(1000);
         } catch (SocketException e) {
             throw new RuntimeException(e);
         }
@@ -56,17 +61,35 @@ public class ClienteAjedrez extends Thread {
     @Override
     public void run() {
         while (!fin) {
+            long now = System.currentTimeMillis();
+
+            // enviar ping
+            if (now - lastPing > PING_INTERVAL) {
+                enviarMensajePlano("PING");
+                lastPing = now;
+            }
+
             try {
                 byte[] buffer = new byte[1024];
-                DatagramPacket datagrama = new DatagramPacket(buffer, buffer.length);
-                socket.receive(datagrama);
-                procesarMensaje(datagrama);
+                DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
+                socket.receive(dp);
+                procesarMensaje(dp);
+            } catch (SocketTimeoutException e) {
             } catch (IOException e) {
-                if (!fin) {
-                    throw new RuntimeException(e);
+                if (!fin) e.printStackTrace();
+            }
+
+            // si no llega pong hace 3s → server caído
+            if (now - lastPong > 3000) {
+                System.out.println("[CLIENTE] Servidor caído");
+                if (receptor != null) {
+                    receptor.onServidorCaido();
                 }
+                cerrar();
+                break;
             }
         }
+
     }
 
     private void procesarMensaje(DatagramPacket datagrama) {
@@ -76,11 +99,17 @@ public class ClienteAjedrez extends Thread {
             datagrama.getLength()
         ).trim();
 
-        System.out.println("[CLIENTE] Recibido: " + mensaje);
+        if (!mensaje.equals("PONG")) {
+            System.out.println("[CLIENTE] Recibido: " + mensaje);
+        }
 
         if (mensaje.equals("Conexion establecida")) {
             conexionEstablecida = true;
             if (receptor != null) receptor.onConexionEstablecida();
+            return;
+        }
+        if (mensaje.equals("PONG")) {
+            lastPong = System.currentTimeMillis();
             return;
         }
         if (mensaje.startsWith("CARD:")) {
@@ -178,7 +207,7 @@ public class ClienteAjedrez extends Thread {
 
     private InetSocketAddress descubrirServidor() throws IOException {
 
-        byte[] data = "Hello_there".getBytes();
+        byte[] data = "BUSCAR".getBytes();
         InetAddress broadcast = obtenerBroadcast();
 
         DatagramPacket broadcastDatagram = new DatagramPacket(

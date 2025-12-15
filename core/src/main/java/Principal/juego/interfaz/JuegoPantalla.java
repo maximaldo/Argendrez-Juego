@@ -149,6 +149,20 @@ public class JuegoPantalla implements Screen {
                         }
                     });
                 }
+                @Override
+                public void onServidorCaido() {
+                    Gdx.app.postRunnable(() -> {
+                        System.out.println("[JUEGO] Servidor caído, volviendo al menú");
+
+                        // cerrar cliente por las dudas
+                        if (clienteRed != null) {
+                            clienteRed.cerrar();
+                        }
+
+                        // volver al menú
+                        app.setScreen(new MenuPantalla(app));
+                    });
+                }
             });
 
 
@@ -311,11 +325,7 @@ public class JuegoPantalla implements Screen {
     @Override
     public void dispose() {
         if (clienteRed != null) {
-            try {
-                clienteRed.cerrar();
-            } catch (Exception e) {
-                Gdx.app.log("RED", "Error cerrando cliente", e);
-            }
+            clienteRed.cerrar();
             clienteRed = null;
         }
 
