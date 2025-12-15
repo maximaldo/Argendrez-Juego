@@ -31,85 +31,40 @@ public class MenuPantalla implements Screen {
 
     public MenuPantalla(Principal app) { this.app = app; }
 
-    @Override public void show() {
+    @Override
+    public void show() {
         Recursos.cargar();
 
         stage = new Stage(new ScreenViewport());
         Gdx.input.setInputProcessor(stage);
 
-        // 1x1
         Pixmap pm = new Pixmap(1,1, Pixmap.Format.RGBA8888);
-        pm.setColor(1,1,1,1); pm.fill();
-        tex1x1 = new Texture(pm); pm.dispose();
+        pm.setColor(1,1,1,1);
+        pm.fill();
+        tex1x1 = new Texture(pm);
+        pm.dispose();
 
-        // Logo
-        if (Recursos.logo != null) {
-            logoImg = new Image(new TextureRegionDrawable(new TextureRegion(Recursos.logo)));
-            float w = Gdx.graphics.getWidth(), h = Gdx.graphics.getHeight();
-            float maxW = w * 0.7f, maxH = h * 0.35f;
-            float esc = Math.min(1f, Math.min(maxW / Recursos.logo.getWidth(), maxH / Recursos.logo.getHeight()));
-            logoImg.setSize(Recursos.logo.getWidth()*esc, Recursos.logo.getHeight()*esc);
-        } else {
-            logoImg = new Image(new TextureRegionDrawable(new TextureRegion(tex1x1)));
-            logoImg.setColor(0.2f,0.2f,0.2f,1f);
-            logoImg.setSize(320,120);
-        }
+        // logo
+        logoImg = new Image(new TextureRegionDrawable(new TextureRegion(Recursos.logo)));
 
-        // Estilos
-        BitmapFont font = new BitmapFont(); font.getData().setScale(1.2f);
-        LabelStyle title = new LabelStyle(font, com.badlogic.gdx.graphics.Color.WHITE);
+        BitmapFont font = new BitmapFont();
+        font.getData().setScale(1.3f);
 
         TextButtonStyle btn = new TextButtonStyle();
         btn.font = font;
         btn.up = new TextureRegionDrawable(new TextureRegion(tex1x1));
-        btn.over = btn.up; btn.down = btn.up;
 
-        // Helpers
-        TextButton bC60 = boton("Clásico 1:00 por turno", btn, 0.15f,0.6f,0.2f);
-        TextButton bC30 = boton("Clásico 0:30 por turno", btn, 0.6f,0.5f,0.15f);
-        TextButton bC15 = boton("Clásico 0:15 por turno", btn, 0.6f,0.2f,0.2f);
+        TextButton jugarBtn = boton("JUGAR", btn, 0.25f, 0.6f, 0.25f);
+        jugarBtn.addListener(click(() -> start(true, 60f))); // 👈 MODO FIJO
 
-        TextButton bE60 = boton("EXTRA 1:00 (bonus + peón evo)", btn, 0.25f,0.45f,0.85f);
-        TextButton bE30 = boton("EXTRA 0:30 (bonus + peón evo)", btn, 0.35f,0.35f,0.85f);
-        TextButton bE15 = boton("EXTRA 0:15 (bonus + peón evo)", btn, 0.45f,0.25f,0.85f);
+        Table root = new Table();
+        root.setFillParent(true);
+        root.center();
 
-        // Navegación
-        bC60.addListener(click(() -> start(false, 60f)));
-        bC30.addListener(click(() -> start(false, 30f)));
-        bC15.addListener(click(() -> start(false, 15f)));
+        root.add(logoImg).padBottom(40);
+        root.row();
+        root.add(jugarBtn).width(300).height(60);
 
-        bE60.addListener(click(() -> start(true, 60f)));
-        bE30.addListener(click(() -> start(true, 30f)));
-        bE15.addListener(click(() -> start(true, 15f)));
-
-        // Layout
-        Table root = new Table(); root.setFillParent(true); root.top().padTop(20);
-        Table logoRow = new Table(); logoRow.add(logoImg).center();
-        root.add(logoRow).growX(); root.row();
-
-        // Panel Clásico
-        Table pClasico = new Table();
-        pClasico.pad(12);
-        pClasico.add(new Label("Modos CLÁSICOS", title)).colspan(1).padBottom(10);
-        pClasico.row();
-        pClasico.add(bC60).width(320).height(48).pad(5); pClasico.row();
-        pClasico.add(bC30).width(320).height(48).pad(5); pClasico.row();
-        pClasico.add(bC15).width(320).height(48).pad(5);
-
-        // Panel Extra
-        Table pExtra = new Table();
-        pExtra.pad(12);
-        pExtra.add(new Label("Modos EXTRA", title)).colspan(1).padBottom(10);
-        pExtra.row();
-        pExtra.add(bE60).width(360).height(48).pad(5); pExtra.row();
-        pExtra.add(bE30).width(360).height(48).pad(5); pExtra.row();
-        pExtra.add(bE15).width(360).height(48).pad(5);
-
-        Table cols = new Table();
-        cols.add(pClasico).pad(10);
-        cols.add(pExtra).pad(10);
-
-        root.row(); root.add(cols).center();
         stage.addActor(root);
 
         if (Recursos.musicaMenu != null) Recursos.musicaMenu.play();

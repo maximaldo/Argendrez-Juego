@@ -34,19 +34,21 @@ public class ServidorAjedrez extends Thread {
     private ColorPieza turno = ColorPieza.BLANCO;
 
     private boolean partidaIniciada = false;
+    private boolean fin = false;
 
     public ServidorAjedrez() {
         try {
             socket = new DatagramSocket(4321);
-            System.out.println("[SERVER] Escuchando en puerto 4321 (UDP)");
+            System.out.println("[SERVER] Escuchando en puerto 4321");
         } catch (SocketException e) {
-            throw new RuntimeException(e);
+            System.err.println("[SERVER] ERROR: Puerto 4321 ocupado");
+            fin = true;
         }
     }
 
     @Override
     public void run() {
-        while (true) {
+        while (!fin) {
             try {
                 byte[] buffer = new byte[1024];
                 DatagramPacket datagrama =
@@ -57,7 +59,9 @@ public class ServidorAjedrez extends Thread {
                 procesarMensaje(datagrama);
 
             } catch (IOException e) {
-                e.printStackTrace();
+                if (!fin) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -82,8 +86,16 @@ public class ServidorAjedrez extends Thread {
             conectarNuevoCliente(datagrama);
             return;
         }
+        if (mensaje.equals("DISCONNECT")) {
+            Cliente c = obtenerRemitente(datagrama);
+            if (c != null) {
+                desconectarCliente(c);
+            }
+            return;
+        }
 
-    //  NO aceptar acciones antes de que la partida esté iniciada
+
+        //  NO aceptar acciones antes de que la partida esté iniciada
         if (!partidaIniciada) {
             System.out.println("[SERVER] Mensaje ignorado, partida no iniciada: " + mensaje);
             return;
@@ -100,6 +112,7 @@ public class ServidorAjedrez extends Thread {
             );
             return;
         }
+
 
         Cliente destino = obtenerOtro(emisor);
 
@@ -142,6 +155,27 @@ public class ServidorAjedrez extends Thread {
             );
         }
     }
+    public void cerrarServidor() {
+        fin = true;
+
+        if (socket != null && !socket.isClosed()) {
+            socket.close();
+        }
+
+        interrupt();
+    }
+
+    private void desconectarCliente(Cliente c) {
+        if (c == usuario1) usuario1 = null;
+        if (c == usuario2) usuario2 = null;
+
+        // Reset del estado de partida
+        turno = ColorPieza.BLANCO;
+        ruleta.reset(); // ahora vemos esto
+
+        System.out.println("[SERVER] Cliente desconectado");
+    }
+
 
     private void conectarNuevoCliente(DatagramPacket dp) {
         Cliente nuevo = new Cliente(dp);
@@ -210,10 +244,12 @@ public class ServidorAjedrez extends Thread {
             this.puerto = dp.getPort();
         }
 
+
         boolean esEste(DatagramPacket dp) {
             return ip.equals(dp.getAddress())
                 && puerto == dp.getPort();
         }
+
 
         @Override
         public String toString() {

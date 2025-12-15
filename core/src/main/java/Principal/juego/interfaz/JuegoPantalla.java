@@ -40,6 +40,7 @@ public class JuegoPantalla implements Screen {
     private Viewport viewport;
     private Hud hud;
 
+
     // --- Red ---
     private ClienteAjedrez clienteRed;
 
@@ -309,39 +310,22 @@ public class JuegoPantalla implements Screen {
     @Override public void hide() {}
     @Override
     public void dispose() {
-
         if (clienteRed != null) {
-            clienteRed.cerrar();   // CIERRA SOCKET UDP
+            try {
+                clienteRed.cerrar();
+            } catch (Exception e) {
+                Gdx.app.log("RED", "Error cerrando cliente", e);
+            }
             clienteRed = null;
         }
 
-        if (batch != null) {
-            batch.dispose();
-        }
-
-        if (tablero != null) {
-            tablero.dispose();     // libera texturas del tablero/piezas
-        }
-
-        if (input != null) {
-            input.dispose();       // shapeRenderer
-        }
-
-        if (hud != null) {
-            hud.dispose();
-        }
-
-        if (cartasHUD != null) {
-            cartasHUD.dispose();
-        }
-
-        if (promoPantalla != null) {
-            promoPantalla.dispose();
-        }
-
-        if (fontMsg != null) {
-            fontMsg.dispose();
-        }
+        if (batch != null) batch.dispose();
+        if (tablero != null) tablero.dispose();
+        if (input != null) input.dispose();
+        if (hud != null) hud.dispose();
+        if (cartasHUD != null) cartasHUD.dispose();
+        if (promoPantalla != null) promoPantalla.dispose();
+        if (fontMsg != null) fontMsg.dispose();
     }
 
 

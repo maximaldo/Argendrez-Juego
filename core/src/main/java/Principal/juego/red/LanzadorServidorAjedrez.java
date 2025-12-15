@@ -1,9 +1,10 @@
 package Principal.juego.red;
 
 public class LanzadorServidorAjedrez {
+    public static ServidorAjedrez servidor;
 
     public static void main(String[] args) {
-        ServidorAjedrez servidor = new ServidorAjedrez();
+        servidor = new ServidorAjedrez();
         servidor.start();
     }
 }

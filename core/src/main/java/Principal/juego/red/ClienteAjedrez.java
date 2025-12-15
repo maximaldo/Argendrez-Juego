@@ -168,9 +168,11 @@ public class ClienteAjedrez extends Thread {
     }
 
     public void cerrar() {
+        enviarMensajePlano("DISCONNECT");
         fin = true;
         socket.close();
     }
+
 
     // === Descubrimiento de servidor (mismos principios que el TP de chat) ===
 

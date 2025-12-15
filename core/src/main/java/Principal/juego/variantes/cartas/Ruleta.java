@@ -25,6 +25,10 @@ public class Ruleta {
         if (pasosNegras <= 0) { pasosNegras = INTERVALO; return true; }
         return false;
     }
+    public void reset() {
+        pasosBlancas = INTERVALO;
+        pasosNegras  = INTERVALO;
+    }
 
     public int getRestanteBlancas() { return pasosBlancas; }
     public int getRestanteNegras()  { return pasosNegras;  }
