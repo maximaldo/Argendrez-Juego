@@ -323,10 +323,9 @@ public class JuegoPantalla implements Screen {
     @Override
     public void dispose() {
         if (clienteRed != null) {
-            clienteRed.cerrar();
+            clienteRed.cerrar();   // CIERRA SOCKET UDP
             clienteRed = null;
         }
-
         if (batch != null) batch.dispose();
         if (tablero != null) tablero.dispose();
         if (input != null) input.dispose();

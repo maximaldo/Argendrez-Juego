@@ -1,5 +1,6 @@
 package Principal.juego.interfaz;
 
+import Principal.juego.elementos.ColorPieza;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,8 +13,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Stack;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
-
-import Principal.juego.elementos.ColorPieza;
 
 public class Hud implements Disposable {
 
