@@ -27,6 +27,14 @@ public class Principal extends Game {
     }
 
     public void dispose() {
+        if (clienteRed != null) {
+            clienteRed.cerrar(); // Envía el paquete "Disconnect" y cierra el socket
+            try {
+                clienteRed.join(1000); // Esperar un momento a que el hilo muera limpiamente
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         super.dispose();
     }
 }

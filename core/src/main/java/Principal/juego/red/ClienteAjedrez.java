@@ -42,7 +42,11 @@ public class ClienteAjedrez extends Thread {
     public volatile boolean conexionEstablecida = false;
 
     public ClienteAjedrez(ReceptorMensajes receptor) throws IOException {
-
+        this.setDaemon(true);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Cierre detectado por la JVM, intentando desconectar...");
+            cerrar();
+        }));
         this.receptor = receptor;
         try {
             this.socket = new DatagramSocket();
