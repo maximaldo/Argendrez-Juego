@@ -137,6 +137,28 @@ public class JuegoPantalla implements Screen {
                         tablero.promocionar(tipo);
                     });
                 }
+                @Override
+                public void onPartidaReseteada() {
+                    Gdx.app.postRunnable(() -> {
+                        // Cuando el rival se desconecta/partida termina, volvemos al menú.
+                        Gdx.app.log("RED", "Partida reseteada por el servidor/rival");
+
+                        // Cierra la pantalla actual y navega al menú
+                        app.setScreen(new MenuPantalla(app));
+                        dispose(); // Importante: esto llama a clienteRed.cerrar() para terminar el socket
+                    });
+                }
+
+
+                @Override
+                public void onServidorCaido() {
+                    Gdx.app.postRunnable(() -> {
+                        Gdx.app.log("RED", "Servidor caído (Timeout)");
+                        app.setScreen(new MenuPantalla(app));
+                        dispose();
+                    });
+                }
+//
 
                 @Override
                 public void onRuletaActualizada(ColorPieza color, int restante) {
@@ -145,20 +167,6 @@ public class JuegoPantalla implements Screen {
                         if (color == input.getTurno() && cartasHUD != null) {
                             cartasHUD.setRuletaRestante(restante);
                         }
-                    });
-                }
-                @Override
-                public void onServidorCaido() {
-                    Gdx.app.postRunnable(() -> {
-                        System.out.println("[JUEGO] Servidor caído, volviendo al menú");
-
-                        // cerrar cliente por las dudas
-                        if (clienteRed != null) {
-                            clienteRed.cerrar();
-                        }
-
-                        // volver al menú
-                        app.setScreen(new MenuPantalla(app));
                     });
                 }
             });
@@ -298,6 +306,10 @@ public class JuegoPantalla implements Screen {
             endTimer += delta;
 
             if (endTimer >= 3f) {
+                if (clienteRed != null) {
+                    clienteRed.cerrar();
+                }
+
                 app.setScreen(new MenuPantalla(app));
                 dispose();
                 return;
@@ -323,7 +335,6 @@ public class JuegoPantalla implements Screen {
     @Override
     public void dispose() {
         if (clienteRed != null) {
-            clienteRed.cerrar();   // CIERRA SOCKET UDP
             clienteRed = null;
         }
         if (batch != null) batch.dispose();

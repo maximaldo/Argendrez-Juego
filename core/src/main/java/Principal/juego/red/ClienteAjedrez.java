@@ -27,6 +27,7 @@ public class ClienteAjedrez extends Thread {
         void onRuletaActualizada(ColorPieza color, int restante);
         void onPromocion(ColorPieza color, TipoPieza tipo);
         void onServidorCaido();
+        void onPartidaReseteada();
     }
 
     private final DatagramSocket socket;
@@ -41,6 +42,7 @@ public class ClienteAjedrez extends Thread {
     public volatile boolean conexionEstablecida = false;
 
     public ClienteAjedrez(ReceptorMensajes receptor) throws IOException {
+
         this.receptor = receptor;
         try {
             this.socket = new DatagramSocket();
@@ -117,6 +119,19 @@ public class ClienteAjedrez extends Thread {
             if (receptor != null) receptor.onCartaRecibida(data);
             return;
         }
+        if (mensaje.equals("RIVAL_DESCONECTADO")) {
+            if (receptor != null) receptor.onServidorCaido();
+            return;
+        }
+        if (mensaje.equals("RESET")) {
+            if (receptor != null) {
+                // Mejor llamarlo onPartidaReseteada
+                receptor.onPartidaReseteada(); // Asegúrate de cambiar el nombre en la interfaz
+            }
+            // ELIMINADA LA LLAMADA A cerrar()
+            return;
+        }
+
 
         if (mensaje.startsWith("COLOR:")) {
             String col = mensaje.substring("COLOR:".length()).trim();
