@@ -6,15 +6,12 @@ import Principal.juego.variantes.cartas.TipoCarta;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Collections;
 
 /**
- * Cliente UDP para el ajedrez.
- * Sigue los mismos principios que HiloCliente del ejercicio de chat:
- *  - Descubre el servidor por broadcast ("Hello_there")
- *  - Usa DatagramSocket y DatagramPacket
- *  - Se conecta enviando "Conectar"
- *  - Se comunica siempre por mensajes de texto.
+     Cliente UDP para el ajedrez.
+     Descubre el servidor por broadcast
+     Usa DatagramSocket y DatagramPacket
+     Se conecta enviando "Conectar"
  */
 public class ClienteAjedrez extends Thread {
 
@@ -61,8 +58,7 @@ public class ClienteAjedrez extends Thread {
 
         this.ipServer = InetAddress.getByName(BROADCAST_IP);
         this.puertoServidor = PORT;
-        enviarMensajePlano("Conectar");
-        System.out.println("[CLIENTE] Conectando con servidor en " + ipServer + ":" + puertoServidor);
+        enviarMensajePlano("BUSCAR");
     }
 
     @Override
@@ -111,9 +107,11 @@ public class ClienteAjedrez extends Thread {
         }
 
         if (mensaje.equals("ENCONTRAR")) {
-            // fijamos IP real del server (dejamos de usar broadcast)
             ipServer = datagrama.getAddress();
             System.out.println("[CLIENTE] Server encontrado en " + ipServer.getHostAddress());
+
+            // AHORA SÍ conectarse
+            enviarMensajePlano("Conectar");
             return;
         }
 
@@ -137,10 +135,8 @@ public class ClienteAjedrez extends Thread {
         }
         if (mensaje.equals("RESET")) {
             if (receptor != null) {
-                // Mejor llamarlo onPartidaReseteada
-                receptor.onPartidaReseteada(); // Asegúrate de cambiar el nombre en la interfaz
+                receptor.onPartidaReseteada();
             }
-            // ELIMINADA LA LLAMADA A cerrar()
             return;
         }
 
@@ -199,9 +195,6 @@ public class ClienteAjedrez extends Thread {
         enviarMensajePlano("CARD:" + data);
     }
 
-    public void enviarRoboCarta(ColorPieza color, TipoCarta carta) {
-        enviarMensajePlano("DRAW:" + color + "," + carta.name());
-    }
     public void enviarPromocion(ColorPieza color, TipoPieza tipo) {
         enviarMensajePlano("PROMO:" + color + "," + tipo.name());
     }

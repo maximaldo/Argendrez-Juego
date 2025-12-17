@@ -8,7 +8,6 @@ import static Principal.juego.elementos.TipoPieza.*;
 
 public class Reglas {
 
-    /** legales . */
     public static List<int[]> movimientosLegales(GestorPiezas t, int x, int y, Pieza pieza, boolean modoExtra) {
         List<int[]> jugadas = new ArrayList<>();
         if (pieza == null) return jugadas;
@@ -36,7 +35,7 @@ public class Reglas {
             }
         }
 
-        // Carta Sprint: +1 ortogonal sin capturar
+        // Carta Sprint tiene +1 ortogonal
         if (t.tieneSprint(x, y)) {
             int[][] ort = {{1,0},{-1,0},{0,1},{0,-1}};
             for (int[] d : ort) {
@@ -67,7 +66,7 @@ public class Reglas {
             }
         }
 
-        // Peón evolucionado (modoExtra): diagonal hacia atrás (solo movimiento)
+        // Peón evolucionado diagonal hacia atrás (solo movimiento)
         if (modoExtra) {
             boolean cruzoMitad = (yo.color == BLANCO) ? (y >= 4) : (y <= 3);
             if (cruzoMitad) {

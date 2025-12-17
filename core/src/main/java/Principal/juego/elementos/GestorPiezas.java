@@ -45,7 +45,7 @@ public class GestorPiezas {
     private ColorPieza ultimoCapturador = null;
     private TipoPieza piezaCapturada = null;
 
-    // ===== EFECTOS =====
+    // Efectos
     private final boolean[][] noCapturable = new boolean[N][N];
     private final boolean[][] congelada    = new boolean[N][N];
     private final boolean[][] sprint       = new boolean[N][N];
@@ -53,9 +53,7 @@ public class GestorPiezas {
     private final ColorPieza[][] expiraNoCap = new ColorPieza[N][N];
     private final ColorPieza[][] expiraCong  = new ColorPieza[N][N];
 
-    // =============== COLECCIONES: nueva estructura =================
-
-    /** Estructura auxiliar usada en listas */
+    //Posicion del pieeza
     public static class PiezaPos {
         public final Pieza pieza;
         public final int x, y;
@@ -80,11 +78,8 @@ public class GestorPiezas {
     public void  poner(int x, int y, Pieza p) { if (enTablero(x,y)) casillas[y][x] = p; }
     public boolean enTablero(int x, int y) { return x>=0 && x<N && y>=0 && y<N; }
 
-    // ================= OPTIMIZACIÓN: MÉTODOS CON COLECCIONES =================
 
-    /**
-     * Devuelve una lista ORDENADA de piezas del color dado.
-     */
+    //devuelve una lista de las piezas ordenada
     public List<PiezaPos> piezasOrdenadas(ColorPieza color) {
         List<PiezaPos> lista = new ArrayList<>();
 
@@ -102,9 +97,6 @@ public class GestorPiezas {
         return lista;
     }
 
-    /**
-     * Verifica mediante búsqueda binaria si existe un rey del color dado.
-     */
     public boolean existeReyConBusqueda(ColorPieza color) {
 
         List<TipoPieza> tipos = new ArrayList<>();
@@ -122,9 +114,8 @@ public class GestorPiezas {
         return Collections.binarySearch(tipos, REY) >= 0;
     }
 
-    // ==========================================================================
+    // carta reagrupacion
 
-    /** Intercambia 2 casillas (carta Reagrupación). */
     public boolean intercambiar(int x1,int y1,int x2,int y2){
         if(!enTablero(x1,y1)||!enTablero(x2,y2)) return false;
         Pieza a=casillas[y1][x1], b=casillas[y2][x2];
@@ -295,7 +286,6 @@ public class GestorPiezas {
         return t;
     }
 
-    // ======= EFECTOS =======
 
     public void tickEfectosAlComenzarTurno(ColorPieza turnoActual) {
         for (int y=0;y<N;y++) for (int x=0;x<N;x++) {
@@ -336,8 +326,7 @@ public class GestorPiezas {
             sprint[y][x] = true;
     }
 
-    public boolean estaCongelada(int x,int y){ return enTablero(x,y) && congelada[y][x]; }
-    public boolean esNoCapturable(int x,int y){ return enTablero(x,y) && noCapturable[y][x]; }
+
     public boolean tieneSprint(int x,int y){ return enTablero(x,y) && sprint[y][x]; }
 
     private void inicializarPosicion() {

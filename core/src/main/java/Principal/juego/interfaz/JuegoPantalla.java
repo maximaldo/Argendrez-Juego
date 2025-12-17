@@ -40,7 +40,7 @@ public class JuegoPantalla implements Screen {
     private Hud hud;
 
 
-    // --- Red ---
+    // red
     private ClienteAjedrez clienteRed;
 
 
@@ -347,7 +347,7 @@ public class JuegoPantalla implements Screen {
     }
 
 
-    // ====== cartas / ruleta ======
+    //  cartas/ruleta
     private ManoCartas manoActual() {
         return (input.getTurno() == ColorPieza.BLANCO) ? manoBlancas : manoNegras;
     }
@@ -373,7 +373,7 @@ public class JuegoPantalla implements Screen {
         TipoCarta carta = TipoCarta.valueOf(p[0]);
         ColorPieza quienLaUso = ColorPieza.valueOf(p[1]);
 
-        // GASTAR LA CARTA EN LA MANO DEL QUE LA USÓ
+        // GASTAR LA CARTA EN LA MANO DEL QUE LA USO
         if (!input.isModoOnline() || quienLaUso != input.getColorLocal()) {
             ManoCartas manoDelQueUso =
                 (quienLaUso == ColorPieza.BLANCO)
@@ -578,7 +578,7 @@ public class JuegoPantalla implements Screen {
 
 
 
-    // ===== helpers selección =====
+    //
     private void seleccionarPropia(BiConsumer<Integer,Integer> pick) {
         pushSelector((x,y)->{
             Pieza p = tablero.obtener(x,y);

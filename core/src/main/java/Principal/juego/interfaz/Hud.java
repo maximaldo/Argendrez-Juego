@@ -16,7 +16,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class Hud implements Disposable {
 
-    private final boolean modoBonus;   // true: dos relojes (modo EXTRA). false: reloj por turno clásico.
+    private final boolean modoBonus;   // truedos relojes (modo EXTRA). false reloj por turno clásico.
     private final float baseSegundos;
 
     private static final float ALTURA_BARRA = 40f;
@@ -107,13 +107,10 @@ public class Hud implements Disposable {
 
         stage.act(dt);
     }
-
-    /** En modo EXTRA: ¿alguien quedó sin tiempo? */
+    //QUIEN PERDIO
     public boolean hayPerdidaPorTiempo() { return modoBonus && perdioPorTiempo != null; }
-    /** En modo EXTRA: devuelve el color que perdió por tiempo (el ganador es el opuesto). */
     public ColorPieza getPerdioPorTiempo() { return perdioPorTiempo; }
 
-    /** Suma bonus por captura (solo modo BONUS). */
     public void sumarBonus(ColorPieza color, int segundos, float limiteMaximo) {
         if (!modoBonus || perdioPorTiempo != null) return;
         if (color == ColorPieza.BLANCO) {

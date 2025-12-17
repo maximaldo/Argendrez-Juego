@@ -80,9 +80,6 @@ public class InputJugador extends InputAdapter {
         this.cliente = cliente;
     }
 
-    public void actualizarTurno(ColorPieza nuevoTurno) {
-        this.turno = nuevoTurno;
-    }
 
     public void setPuedeJugar(boolean v) {
         this.puedeJugar = v;

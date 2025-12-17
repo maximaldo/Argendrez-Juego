@@ -25,7 +25,7 @@ import java.util.List;
 import Principal.juego.elementos.ColorPieza;
 import Principal.juego.variantes.cartas.TipoCarta;
 
-/** Panel lateral (derecha) para cartas y ruleta. */
+//Panel lateral para cartas y ruleta.
 public class CartasHUD {
 
     public interface Listener { void onJugarCarta(TipoCarta carta); }

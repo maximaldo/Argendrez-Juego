@@ -32,7 +32,7 @@ public class Recursos {
         if (musicaMenu != null) { musicaMenu.dispose(); musicaMenu = null; }
     }
 
-    // --- Tablero/Piezas ---
+    // tablero y piezas
     public static Texture texturaTablero() {
         if (tablero == null) tablero = new Texture(Gdx.files.internal("tablero.jpg"));
         return tablero;

@@ -21,5 +21,4 @@ public enum ColorPieza {
     public int filaMayor() { return filaMayor; }
     public String prefijoArchivo() { return prefijoArchivo; }
 
-    public ColorPieza opuesto() { return this == BLANCO ? NEGRO : BLANCO; }
 }

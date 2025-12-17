@@ -38,7 +38,7 @@ public class EfectosVisuales {
         dispararEfecto(x, y, carta, ColorPieza.BLANCO);
     }
 
-    /** Llamado por GestorPiezas después de aplicar una carta */
+    //Llamado por GestorPiezas después de aplicar una carta
     public static void dispararEfecto(int x, int y, TipoCarta carta, ColorPieza color) {
 
         casX = x;
@@ -80,7 +80,7 @@ public class EfectosVisuales {
         tiempo = 0;
     }
 
-    /** Llamado cada frame desde render() */
+   //lamado a cada frame desde render
     public static void render(SpriteBatch batch, float tamCasilla, float origenX, float origenY) {
 
         if (texturaActual == null) return;

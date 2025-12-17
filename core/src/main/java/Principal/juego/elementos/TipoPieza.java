@@ -47,7 +47,7 @@ public enum TipoPieza {
         }
     }
 
-    /** Bonus de tiempo por capturar esta pieza (segundos). */
+    //Bonus de tiempo por capturar esta pieza (segundos)
     public int bonusSegundos() {
         switch (this) {
             case PEON:    return 5;
