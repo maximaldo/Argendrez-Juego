@@ -82,7 +82,7 @@ public class ClienteAjedrez extends Thread {
                 if (!fin) e.printStackTrace();
             }
 
-            // si no llega pong hace 3s → server caído
+            // si no llega pong hace 3s server caído
             if (now - lastPong > 3000) {
                 System.out.println("[CLIENTE] Servidor caído");
                 if (receptor != null) {
