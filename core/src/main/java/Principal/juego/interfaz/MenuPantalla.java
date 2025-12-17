@@ -55,7 +55,7 @@ public class MenuPantalla implements Screen {
         btn.up = new TextureRegionDrawable(new TextureRegion(tex1x1));
 
         TextButton jugarBtn = boton("JUGAR", btn, 0.25f, 0.6f, 0.25f);
-        jugarBtn.addListener(click(() -> start(true, 60f))); // 👈 MODO FIJO
+        jugarBtn.addListener(click(() -> start(true, 60f))); // MODO FIJO
 
         Table root = new Table();
         root.setFillParent(true);

@@ -86,7 +86,7 @@ public class JuegoPantalla implements Screen {
         input = new InputJugador(tablero, viewport);
         InputMultiplexer mux = new InputMultiplexer(input);
 
-        // Intentar iniciar modo online usando UDP + broadcast (mismos principios que el chat)
+        // Intentar iniciar modo online usando UDP + broadcast
         try {
             clienteRed = new ClienteAjedrez(new ClienteAjedrez.ReceptorMensajes() {
 
@@ -145,7 +145,7 @@ public class JuegoPantalla implements Screen {
 
                         // Cierra la pantalla actual y navega al menú
                         app.setScreen(new MenuPantalla(app));
-                        dispose(); // Importante: esto llama a clienteRed.cerrar() para terminar el socket
+                        dispose();
                     });
                 }
 

@@ -84,7 +84,6 @@ public class GestorPiezas {
 
     /**
      * Devuelve una lista ORDENADA de piezas del color dado.
-     * Usa ArrayList + Collections.sort (COMPROBADO PARA EL PROFE)
      */
     public List<PiezaPos> piezasOrdenadas(ColorPieza color) {
         List<PiezaPos> lista = new ArrayList<>();
@@ -105,7 +104,6 @@ public class GestorPiezas {
 
     /**
      * Verifica mediante búsqueda binaria si existe un rey del color dado.
-     * Usa: ArrayList + Collections.sort + Collections.binarySearch
      */
     public boolean existeReyConBusqueda(ColorPieza color) {
 
@@ -150,7 +148,7 @@ public class GestorPiezas {
 
         verificarPromocion(dx, dy, src);
 
-        // DEMOSTRACIÓN PARA EL PROFE (no afecta el juego)
+
         existeReyConBusqueda(BLANCO);
         existeReyConBusqueda(NEGRO);
 

@@ -8,7 +8,7 @@ import static Principal.juego.elementos.TipoPieza.*;
 
 public class Reglas {
 
-    /** Pseudolegales (no chequea jaque). */
+    /** legales . */
     public static List<int[]> movimientosLegales(GestorPiezas t, int x, int y, Pieza pieza, boolean modoExtra) {
         List<int[]> jugadas = new ArrayList<>();
         if (pieza == null) return jugadas;

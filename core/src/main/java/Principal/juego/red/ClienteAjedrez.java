@@ -31,12 +31,15 @@ public class ClienteAjedrez extends Thread {
     }
 
     private final DatagramSocket socket;
-    private final InetAddress ipServer;
+    private InetAddress ipServer;
     private final int puertoServidor;
     private final ReceptorMensajes receptor;
     private long lastPing = 0;
     private long lastPong = System.currentTimeMillis();
     private static final long PING_INTERVAL = 1000;
+
+    private static final int PORT = 4321;
+    private static final String BROADCAST_IP = "255.255.255.255";
 
     private volatile boolean fin = false;
     public volatile boolean conexionEstablecida = false;
@@ -56,10 +59,8 @@ public class ClienteAjedrez extends Thread {
             throw new RuntimeException(e);
         }
 
-        InetSocketAddress servidor = descubrirServidor();
-        this.ipServer = servidor.getAddress();
-        this.puertoServidor = servidor.getPort();
-
+        this.ipServer = InetAddress.getByName(BROADCAST_IP);
+        this.puertoServidor = PORT;
         enviarMensajePlano("Conectar");
         System.out.println("[CLIENTE] Conectando con servidor en " + ipServer + ":" + puertoServidor);
     }
@@ -107,6 +108,13 @@ public class ClienteAjedrez extends Thread {
 
         if (!mensaje.equals("PONG")) {
             System.out.println("[CLIENTE] Recibido: " + mensaje);
+        }
+
+        if (mensaje.equals("ENCONTRAR")) {
+            // fijamos IP real del server (dejamos de usar broadcast)
+            ipServer = datagrama.getAddress();
+            System.out.println("[CLIENTE] Server encontrado en " + ipServer.getHostAddress());
+            return;
         }
 
         if (mensaje.equals("Conexion establecida")) {
@@ -222,46 +230,5 @@ public class ClienteAjedrez extends Thread {
     }
 
 
-    // === Descubrimiento de servidor (mismos principios que el TP de chat) ===
 
-    private InetSocketAddress descubrirServidor() throws IOException {
-
-        byte[] data = "BUSCAR".getBytes();
-        InetAddress broadcast = obtenerBroadcast();
-
-        DatagramPacket broadcastDatagram = new DatagramPacket(
-            data,
-            data.length,
-            broadcast,
-            4321
-        );
-
-        socket.send(broadcastDatagram);
-        System.out.println("[CLIENTE] Broadcast enviado a " + broadcast.getHostAddress());
-
-        // esperar respuesta
-        byte[] buffer = new byte[1024];
-        DatagramPacket respuesta = new DatagramPacket(buffer, buffer.length);
-        socket.receive(respuesta);
-
-        System.out.println("[CLIENTE] Respuesta de discovery: " +
-            respuesta.getAddress() + ":" + respuesta.getPort());
-
-        return new InetSocketAddress(
-            respuesta.getAddress(),
-            respuesta.getPort()
-        );
-    }
-
-    private InetAddress obtenerBroadcast() throws SocketException {
-        for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-            if (!ni.isUp() || ni.isLoopback()) continue;
-
-            for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
-                InetAddress broadcast = ia.getBroadcast();
-                if (broadcast != null) return broadcast;
-            }
-        }
-        throw new RuntimeException("No se encontró broadcast");
-    }
 }
