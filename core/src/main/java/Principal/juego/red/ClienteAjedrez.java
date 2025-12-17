@@ -199,7 +199,7 @@ public class ClienteAjedrez extends Thread {
         enviarMensajePlano("PROMO:" + color + "," + tipo.name());
     }
 
-    // === API pública para el juego ===
+    //
 
     public void enviarMovimiento(int sx, int sy, int dx, int dy) {
         String msg = "MOVE:" + sx + "," + sy + "," + dx + "," + dy;
